@@ -148,6 +148,10 @@ The project currently implements:
 - Infrastructure tagging for governance and ownership
 - Terraform plan review before deployment
 - Independent AWS API verification after deployment
+- Automated Terraform validation through GitHub Actions
+- Trivy Infrastructure-as-Code security scanning
+- CI failure on HIGH/CRITICAL security findings
+- Automatic public IPv4 assignment disabled across AWS subnets
 
 Future phases will introduce automated security scanning, policy checks, GitHub OIDC authentication, and CI/CD deployment controls.
 
@@ -233,8 +237,10 @@ Local Terraform state and provider working directories are intentionally exclude
 - [x] Independent AWS infrastructure verification
 - [x] Git repository initialization
 - [x] GitHub repository creation
-- [ ] GitHub Actions Terraform CI pipeline
-- [ ] Infrastructure security scanning
+- [x] GitHub Actions Terraform CI pipeline
+- [x] Infrastructure security scanning with Trivy
+- [x] Automated HIGH/CRITICAL IaC security quality gate
+- [x] Security finding remediation and CI verification
 - [ ] GitHub OIDC authentication to AWS
 - [ ] AWS security groups
 - [ ] AWS compute layer
@@ -255,8 +261,27 @@ The AWS networking foundation has been:
 
 The deployed environment currently contains eight Terraform-managed AWS networking resources.
 
+### Phase 2 - Terraform CI and IaC Security: Complete
+
+GitHub Actions now automatically validates Terraform infrastructure changes and performs Trivy Infrastructure-as-Code security scanning.
+
+During implementation, the security pipeline identified automatic public IPv4 assignment on the AWS public subnet as a security misconfiguration. The Terraform configuration was remediated, the change was reviewed through `terraform plan`, deployed in-place to AWS, independently verified through the AWS CLI, and successfully revalidated by the CI security pipeline.
+
+The security pipeline currently performs:
+
+- Terraform formatting verification
+- Terraform initialization
+- Terraform configuration validation
+- Trivy Infrastructure-as-Code security scanning
+- CI failure on HIGH/CRITICAL security findings
+- Automated security validation on pushes and pull requests
+
+**Security remediation lifecycle:**
+
+`Detect -> Analyze -> Remediate -> Plan -> Deploy -> Verify -> Re-scan -> Pass`
+
 ### Next Phase
 
-**GitHub Actions CI/CD and DevSecOps Automation**
+**GitHub OIDC Authentication and Secure AWS CI/CD Integration**
 
-The next phase will introduce automated Terraform validation and security controls so infrastructure changes can be checked automatically through GitHub before deployment.
+The next phase will establish short-lived federated authentication between GitHub Actions and AWS, eliminating the need for long-lived AWS credentials in CI/CD.
