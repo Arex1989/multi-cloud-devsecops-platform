@@ -1,0 +1,41 @@
+# Terraform working directories
+**/.terraform/*
+
+# Terraform state files
+*.tfstate
+*.tfstate.*
+
+# Terraform crash logs
+crash.log
+crash.*.log
+
+# Sensitive Terraform variable files
+*.tfvars
+*.tfvars.json
+
+# Terraform override files
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Terraform plan files
+*.tfplan
+tfplan
+
+# Environment and secret files
+.env
+.env.*
+*.pem
+*.key
+*.p12
+
+# macOS
+.DS_Store
+
+# VS Code local settings
+.vscode/
+
+# Temporary files
+*.tmp
+*.swp
