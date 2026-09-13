@@ -83,3 +83,50 @@ resource "aws_iam_role_policy" "github_actions_read_infrastructure" {
     ]
   })
 }
+resource "aws_iam_role_policy" "github_actions_terraform_state" {
+  name = "github-actions-terraform-state"
+  role = aws_iam_role.github_actions.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+
+    Statement = [
+      {
+        Effect = "Allow"
+
+        Action = [
+          "s3:ListBucket"
+        ]
+
+        Resource = "arn:aws:s3:::multi-cloud-devsecops-tfstate-149600119261-euc1"
+
+        Condition = {
+          StringEquals = {
+            "s3:prefix" = "terraform/aws/terraform.tfstate"
+          }
+        }
+      },
+      {
+        Effect = "Allow"
+
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject"
+        ]
+
+        Resource = "arn:aws:s3:::multi-cloud-devsecops-tfstate-149600119261-euc1/terraform/aws/terraform.tfstate"
+      },
+      {
+        Effect = "Allow"
+
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:DeleteObject"
+        ]
+
+        Resource = "arn:aws:s3:::multi-cloud-devsecops-tfstate-149600119261-euc1/terraform/aws/terraform.tfstate.tflock"
+      }
+    ]
+  })
+}
