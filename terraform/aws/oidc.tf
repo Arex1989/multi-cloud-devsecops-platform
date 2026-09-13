@@ -79,7 +79,8 @@ resource "aws_iam_role_policy" "github_actions_read_infrastructure" {
           "ec2:DescribeInternetGateways",
           "iam:GetOpenIDConnectProvider",
           "iam:GetRole",
-          "iam:ListRolePolicies"
+          "iam:ListRolePolicies",
+          "iam:GetRolePolicy"
         ]
 
         Resource = "*"
