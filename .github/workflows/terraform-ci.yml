@@ -13,6 +13,10 @@ on:
       - "terraform/**"
       - ".github/workflows/terraform-ci.yml"
 
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   terraform:
     name: Terraform Validation
@@ -28,6 +32,16 @@ jobs:
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: arn:aws:iam::149600119261:role/github-actions-terraform-role
+          aws-region: eu-central-1
+          allowed-account-ids: 149600119261
+
+      - name: Verify AWS OIDC identity
+        run: aws sts get-caller-identity
 
       - name: Terraform Format Check
         run: terraform fmt -check -recursive
