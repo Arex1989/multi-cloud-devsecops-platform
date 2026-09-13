@@ -59,3 +59,27 @@ resource "aws_iam_role" "github_actions" {
     ManagedBy = "Terraform"
   }
 }
+
+resource "aws_iam_role_policy" "github_actions_read_infrastructure" {
+  name = "github-actions-read-infrastructure"
+  role = aws_iam_role.github_actions.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+
+    Statement = [
+      {
+        Effect = "Allow"
+
+        Action = [
+          "ec2:DescribeVpcs",
+          "ec2:DescribeSubnets",
+          "ec2:DescribeRouteTables",
+          "ec2:DescribeInternetGateways"
+        ]
+
+        Resource = "*"
+      }
+    ]
+  })
+}

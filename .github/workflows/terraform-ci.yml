@@ -42,6 +42,19 @@ jobs:
 
       - name: Verify AWS OIDC identity
         run: aws sts get-caller-identity
+      - name: Verify AWS network read access
+        run: |
+          echo "Verifying least-privilege access to AWS networking resources..."
+
+          aws ec2 describe-vpcs \
+            --filters "Name=tag:Name,Values=multicloud-devsecops-dev-vpc" \
+            --query 'Vpcs[*].[VpcId,CidrBlock,State]' \
+            --output table
+
+          aws ec2 describe-subnets \
+            --filters "Name=vpc-id,Values=vpc-0bf5b304850bfd5a8" \
+            --query 'Subnets[*].[SubnetId,CidrBlock,MapPublicIpOnLaunch,State]' \
+            --output table
 
       - name: Terraform Format Check
         run: terraform fmt -check -recursive
