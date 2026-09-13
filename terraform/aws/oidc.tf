@@ -80,7 +80,8 @@ resource "aws_iam_role_policy" "github_actions_read_infrastructure" {
           "iam:GetOpenIDConnectProvider",
           "iam:GetRole",
           "iam:ListRolePolicies",
-          "iam:GetRolePolicy"
+          "iam:GetRolePolicy",
+          "iam:ListAttachedRolePolicies"
         ]
 
         Resource = "*"
