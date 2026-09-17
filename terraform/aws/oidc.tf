@@ -77,6 +77,7 @@ resource "aws_iam_role_policy" "github_actions_read_infrastructure" {
           "ec2:DescribeSubnets",
           "ec2:DescribeRouteTables",
           "ec2:DescribeInternetGateways",
+          "ec2:DescribeSecurityGroups",
           "iam:GetOpenIDConnectProvider",
           "iam:GetRole",
           "iam:ListRolePolicies",
