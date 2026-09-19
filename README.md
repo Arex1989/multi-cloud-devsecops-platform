@@ -52,7 +52,7 @@ AWS VPC: 10.20.0.0/16
 |
 +-- Public Subnet
 |   10.20.1.0/24
-|   Public IPv4 assignment enabled
+|   EC2 Web Tier
 |
 +-- Private Application Subnet
 |   10.20.10.0/24
@@ -60,7 +60,7 @@ AWS VPC: 10.20.0.0/16
 |
 +-- Management Subnet
     10.20.20.0/24
-    No direct Internet Gateway route
+    SSM / Management Connectivity
 ```
 
 ## AWS Infrastructure Implemented
@@ -75,15 +75,96 @@ The current AWS environment includes:
 - Dedicated public route table
 - Default Internet route
 - Public subnet route table association
+- Web and application security groups
+- Dedicated VPC endpoint security group
+- Controlled ingress and egress rules
+- Amazon EC2 web tier using Amazon Linux 2023 ARM64
+- `t4g.micro` EC2 compute instance
+- Encrypted GP3 EBS storage
+- IMDSv2 enforced on the EC2 instance
+- IAM role and instance profile for EC2
+- AWS Systems Manager integration
+- Amazon S3 Gateway VPC Endpoint
+- SSM Interface VPC Endpoint
+- SSM Messages Interface VPC Endpoint
+- Nginx web service deployed and validated
 - Standardized Terraform resource tagging
 - Terraform outputs for infrastructure IDs
 - IAM Identity Center authentication for local administration
+- GitHub OIDC federation for CI/CD authentication
+- Remote Terraform state using Amazon S3
 
 All deployed AWS infrastructure is managed through Terraform rather than manual resource creation.
 
+## AWS Compute Layer
+
+The project now includes a Terraform-managed Amazon EC2 web tier.
+
+The EC2 implementation includes:
+
+- Amazon Linux 2023
+- ARM64 architecture
+- `t4g.micro` instance type
+- Encrypted GP3 root volume
+- IMDSv2 enforcement
+- Dedicated security group
+- Terraform-managed IAM instance profile
+- AWS Systems Manager integration
+- Automated Nginx web server deployment
+- Infrastructure tagging for environment, project, tier, and management ownership
+
+The EC2 instance is managed as Infrastructure as Code and participates in the same Terraform validation and GitHub Actions CI workflow as the networking layer.
+
+## AWS Systems Manager
+
+The EC2 web tier is integrated with AWS Systems Manager (SSM).
+
+A dedicated IAM role and instance profile provide the EC2 instance with the required Systems Manager permissions.
+
+Private AWS service connectivity is supported through:
+
+- SSM Interface VPC Endpoint
+- SSM Messages Interface VPC Endpoint
+- Amazon S3 Gateway VPC Endpoint
+
+The SSM Agent was successfully verified as:
+
+```text
+Online
+```
+
+This provides an AWS-native management path for the EC2 instance without depending exclusively on direct SSH administration.
+
+## Nginx Web Tier Validation
+
+Nginx was installed and configured on the Amazon Linux 2023 EC2 instance through AWS Systems Manager.
+
+The service was verified as:
+
+```text
+active
+enabled
+```
+
+Local HTTP validation returned:
+
+```text
+HTTP/1.1 200 OK
+Server: nginx
+```
+
+The deployed web page identifies the workload as:
+
+```text
+Multi-Cloud DevSecOps Platform
+AWS web tier - Terraform managed
+```
+
+This validates the complete path from Terraform-managed compute provisioning through Systems Manager administration to application service availability.
+
 ## Infrastructure as Code Workflow
 
-The current infrastructure workflow follows:
+The infrastructure workflow follows:
 
 ```text
 Terraform Code
@@ -107,12 +188,14 @@ terraform apply
 AWS Infrastructure
       |
       v
-AWS CLI Verification
+AWS CLI / SSM Verification
 ```
 
 This workflow ensures infrastructure changes are formatted, validated, reviewed, deployed, and independently verified.
 
 ## Identity and Access Management
+
+### Local Administration
 
 Local AWS administration uses AWS IAM Identity Center.
 
@@ -132,7 +215,135 @@ Temporary Assumed-Role Credentials
      AWS CLI / Terraform
 ```
 
-This avoids storing long-lived AWS access keys in the project repository.
+This avoids storing long-lived AWS access keys locally or in the project repository.
+
+### GitHub Actions OIDC Authentication
+
+GitHub Actions authenticates to AWS using OpenID Connect federation.
+
+```text
+GitHub Repository
+       |
+       v
+GitHub Actions
+       |
+       v
+GitHub OIDC Token
+       |
+       v
+AWS STS
+       |
+       v
+GitHub Actions IAM Role
+       |
+       v
+Terraform / AWS APIs
+```
+
+This eliminates the need to store permanent AWS access keys as GitHub secrets.
+
+The GitHub Actions role uses a dedicated least-privilege read policy for Terraform infrastructure refresh and planning.
+
+The CI role has controlled read access to resources required by the deployed Terraform configuration, including:
+
+- VPCs and VPC attributes
+- Subnets
+- Route tables
+- Internet Gateways
+- Security groups
+- Security group rules
+- VPC endpoints
+- Prefix lists
+- Network interfaces
+- EC2 instances
+- EC2 instance types
+- EC2 instance attributes
+- EC2 tags
+- EBS volumes
+- EC2 credit specifications
+- IAM roles
+- IAM instance profiles
+- GitHub OIDC provider information
+
+This policy was iteratively validated against the live Terraform state until the CI pipeline could successfully refresh and plan the complete deployed AWS infrastructure.
+
+## Remote Terraform State
+
+Terraform state has been migrated from local storage to an Amazon S3 backend.
+
+The backend provides:
+
+- Centralized remote state
+- S3 encryption
+- Versioning
+- Public access blocking
+- Native Terraform state locking
+- CI/CD access through AWS OIDC
+- Separation of infrastructure state from the Git repository
+
+Local Terraform state files and provider working directories are excluded from source control.
+
+## GitHub Actions DevSecOps Pipeline
+
+The project includes an automated GitHub Actions CI pipeline for Terraform infrastructure validation.
+
+The current workflow is:
+
+```text
+Git Push / Pull Request
+          |
+          v
+Checkout Repository
+          |
+          v
+Setup Terraform
+          |
+          v
+Configure AWS Credentials
+          |
+          v
+GitHub OIDC Authentication
+          |
+          v
+Verify AWS OIDC Identity
+          |
+          v
+Verify AWS Network Read Access
+          |
+          v
+Terraform Format Check
+          |
+          v
+Terraform Init
+          |
+          v
+Terraform Validate
+          |
+          v
+Terraform Plan
+          |
+          v
+Trivy IaC Security Scan
+          |
+          v
+CI Validation Passed
+```
+
+The complete workflow has been successfully validated against the deployed AWS environment.
+
+### Current CI Status
+
+```text
+AWS OIDC Authentication          PASSED
+AWS OIDC Identity Verification   PASSED
+AWS Network Read Access          PASSED
+Terraform Format Check           PASSED
+Terraform Init                   PASSED
+Terraform Validate               PASSED
+Terraform Plan                   PASSED
+Trivy IaC Security Scan          PASSED
+GitHub Actions Workflow          PASSED
+```
 
 ## Security Practices
 
@@ -140,20 +351,34 @@ The project currently implements:
 
 - AWS IAM Identity Center authentication
 - Temporary assumed-role credentials
-- No long-lived AWS access keys in source control
+- GitHub OIDC federation
+- No long-lived AWS access keys in GitHub
+- Least-privilege AWS IAM permissions for CI
 - Terraform state excluded from Git
 - Sensitive `.tfvars` files excluded from Git
+- Encrypted and versioned remote Terraform state
+- S3 public access blocking
+- Native Terraform state locking
 - Private subnet isolation
 - Controlled public routing through an Internet Gateway
+- Dedicated security groups
+- Controlled ingress and egress rules
+- VPC endpoint-based AWS service connectivity
+- Encrypted EC2 EBS storage
+- IMDSv2 enforcement
+- AWS Systems Manager integration
 - Infrastructure tagging for governance and ownership
 - Terraform plan review before deployment
 - Independent AWS API verification after deployment
 - Automated Terraform validation through GitHub Actions
 - Trivy Infrastructure-as-Code security scanning
 - CI failure on HIGH/CRITICAL security findings
-- Automatic public IPv4 assignment disabled across AWS subnets
+- Automatic public IPv4 assignment disabled at the subnet level
+- Git-based infrastructure change management
 
-Future phases will introduce automated security scanning, policy checks, GitHub OIDC authentication, and CI/CD deployment controls.
+The platform now integrates automated IaC security scanning, GitHub OIDC federation, least-privilege CI access, remote Terraform state, and automated infrastructure validation.
+
+Future phases will extend these controls across Microsoft Azure and introduce additional policy, monitoring, reusable modules, and multi-cloud governance capabilities.
 
 ## Terraform Outputs
 
@@ -174,6 +399,7 @@ multi-cloud-devsecops-platform/
 |
 +-- .github/
 |   +-- workflows/
+|       +-- terraform-ci.yml
 |
 +-- docs/
 |
@@ -185,14 +411,22 @@ multi-cloud-devsecops-platform/
 |
 +-- terraform/
 |   +-- aws/
+|   |   +-- backend.tf
+|   |   +-- compute-iam.tf
+|   |   +-- compute.tf
 |   |   +-- main.tf
+|   |   +-- oidc.tf
 |   |   +-- outputs.tf
 |   |   +-- providers.tf
+|   |   +-- security-groups.tf
 |   |   +-- variables.tf
 |   |   +-- versions.tf
+|   |   +-- vpc-endpoints.tf
 |   |   +-- .terraform.lock.hcl
 |   |
 |   +-- azure/
+|
++-- bootstrap/
 |
 +-- .gitignore
 +-- README.md
@@ -205,10 +439,21 @@ Local Terraform state and provider working directories are intentionally exclude
 - Terraform
 - Amazon Web Services (AWS)
 - Microsoft Azure
+- Amazon EC2
+- Amazon VPC
+- Amazon EBS
+- Amazon S3
+- AWS IAM
+- AWS IAM Identity Center
+- AWS Systems Manager
+- AWS STS
+- AWS VPC Endpoints
 - Git
 - GitHub
 - GitHub Actions
-- AWS IAM Identity Center
+- GitHub OIDC
+- Trivy
+- Nginx
 - AWS CLI
 - Azure CLI
 - Visual Studio Code
@@ -242,16 +487,27 @@ Local Terraform state and provider working directories are intentionally exclude
 - [x] Automated HIGH/CRITICAL IaC security quality gate
 - [x] Security finding remediation and CI verification
 - [x] GitHub OIDC authentication to AWS
-- [ ] AWS security groups
-- [ ] AWS compute layer
-- [ ] Azure Terraform infrastructure
-- [ ] Azure identity and networking
-- [ ] Reusable Terraform modules
+- [x] AWS security groups
+- [x] AWS compute layer
+- [x] EC2 IAM role and instance profile
+- [x] AWS Systems Manager integration
+- [x] S3 Gateway VPC Endpoint
+- [x] SSM Interface VPC Endpoint
+- [x] SSM Messages Interface VPC Endpoint
+- [x] Encrypted EC2 EBS storage
+- [x] IMDSv2 enforcement
+- [x] Nginx web-tier deployment
 - [x] Remote Terraform state
 - [x] Least-privilege AWS IAM for CI
 - [x] Encrypted and versioned S3 Terraform backend
 - [x] Native S3 state locking
 - [x] Automated Terraform plan in GitHub Actions
+- [x] GitHub Actions live AWS infrastructure refresh
+- [x] End-to-end Terraform CI validation
+- [x] Successful Trivy security validation
+- [ ] Azure Terraform infrastructure
+- [ ] Azure identity and networking
+- [ ] Reusable Terraform modules
 - [ ] Monitoring and logging
 - [ ] Multi-cloud architecture documentation
 
@@ -263,15 +519,17 @@ The AWS networking foundation has been:
 
 **Designed -> Defined as Code -> Validated -> Planned -> Reviewed -> Deployed -> Verified -> Version Controlled**
 
-The deployed environment currently contains eight Terraform-managed AWS networking resources.
+The deployed environment establishes the networking foundation for the multi-cloud platform, including subnet segmentation, Internet connectivity, routing, and Terraform-managed infrastructure configuration.
 
 ### Phase 2 - Terraform CI and IaC Security: Complete
 
-GitHub Actions now automatically validates Terraform infrastructure changes and performs Trivy Infrastructure-as-Code security scanning.
+GitHub Actions automatically validates Terraform infrastructure changes and performs Trivy Infrastructure-as-Code security scanning.
 
-During implementation, the security pipeline identified automatic public IPv4 assignment on the AWS public subnet as a security misconfiguration. The Terraform configuration was remediated, the change was reviewed through `terraform plan`, deployed in-place to AWS, independently verified through the AWS CLI, and successfully revalidated by the CI security pipeline.
+During implementation, the security pipeline identified automatic public IPv4 assignment on the AWS public subnet as a security misconfiguration.
 
-The security pipeline currently performs:
+The Terraform configuration was remediated, the change was reviewed through `terraform plan`, deployed in-place to AWS, independently verified through the AWS CLI, and successfully revalidated by the CI security pipeline.
+
+The security pipeline performs:
 
 - Terraform formatting verification
 - Terraform initialization
@@ -284,13 +542,13 @@ The security pipeline currently performs:
 
 `Detect -> Analyze -> Remediate -> Plan -> Deploy -> Verify -> Re-scan -> Pass`
 
-### Phase 3 – GitHub OIDC and Secure AWS CI/CD Integration: Complete
+### Phase 3 - GitHub OIDC and Secure AWS CI/CD Integration: Complete
 
-GitHub Actions now authenticates to AWS through OpenID Connect (OIDC) federation using short-lived AWS credentials, eliminating the need for long-lived AWS access keys in GitHub.
+GitHub Actions authenticates to AWS through OpenID Connect federation using short-lived AWS credentials, eliminating the need for long-lived AWS access keys in GitHub.
 
 Terraform state has been migrated from local storage to a private Amazon S3 backend with encryption, versioning, public access blocking, and native state locking.
 
-The GitHub Actions pipeline now performs:
+The GitHub Actions pipeline performs:
 
 - AWS OIDC authentication
 - AWS identity verification
@@ -301,18 +559,76 @@ The GitHub Actions pipeline now performs:
 - Automated Terraform plan
 - Trivy Infrastructure-as-Code security scanning
 
-The GitHub Actions IAM role follows least-privilege principles and contains only the AWS read and Terraform state permissions required by the CI pipeline.
-
-The complete CI workflow has been independently verified against the deployed AWS infrastructure, with Terraform reporting:
-
-**No changes. Your infrastructure matches the configuration.**
+The GitHub Actions IAM role follows least-privilege principles and contains the AWS read and Terraform state permissions required by the CI pipeline.
 
 **Secure CI/CD workflow:**
 
 `Push/PR -> GitHub OIDC -> AWS STS -> S3 Remote State -> Terraform Validate -> Terraform Plan -> Trivy Security Scan -> Pass`
 
-### Next Phase
+### Phase 4 - AWS Compute, Systems Management and Private Service Connectivity: Complete
 
-**AWS Security Groups and Compute Layer**
+The AWS environment has been extended beyond the networking foundation with a Terraform-managed compute layer and secure AWS service connectivity.
 
-The next phase will extend the AWS environment beyond the networking foundation by introducing security groups and compute resources while preserving the established Terraform, OIDC, remote-state, and DevSecOps controls.
+The implementation includes:
+
+- Amazon EC2 web-tier instance running Amazon Linux 2023 ARM64
+- `t4g.micro` compute architecture
+- Encrypted GP3 EBS storage
+- IMDSv2 enforcement
+- Dedicated EC2 IAM role and instance profile
+- AWS Systems Manager integration
+- Amazon S3 Gateway VPC Endpoint
+- SSM Interface VPC Endpoint
+- SSM Messages Interface VPC Endpoint
+- Dedicated VPC endpoint security controls
+- Nginx installation and service configuration
+- HTTP service validation
+- Terraform-managed compute and IAM resources
+
+AWS Systems Manager connectivity was successfully validated against the EC2 instance.
+
+The Nginx web service was successfully installed, enabled, started, and validated with an HTTP `200 OK` response.
+
+During CI integration, Terraform required additional read permissions to refresh the deployed AWS resources. The GitHub Actions IAM policy was incrementally extended using least-privilege permissions for the specific AWS APIs required by Terraform.
+
+The resulting GitHub Actions workflow successfully completed the full infrastructure validation pipeline.
+
+### Phase 4 Final Validation
+
+```text
+Set up job                         PASSED
+Checkout repository               PASSED
+Setup Terraform                   PASSED
+Configure AWS credentials         PASSED
+Verify AWS OIDC identity          PASSED
+Verify AWS network read access    PASSED
+Terraform Format Check            PASSED
+Terraform Init                    PASSED
+Terraform Validate                PASSED
+Terraform Plan                    PASSED
+Trivy IaC Security Scan           PASSED
+Complete job                      PASSED
+```
+
+**AWS CI/CD milestone status: COMPLETE**
+
+The AWS infrastructure, Terraform configuration, remote state, IAM policies, and GitHub Actions pipeline are synchronized and successfully validated.
+
+## Next Phase
+
+### Phase 5 - Azure Infrastructure and Multi-Cloud Integration
+
+The next phase will extend the platform into Microsoft Azure using Terraform while preserving the Infrastructure-as-Code, identity, security, CI/CD, and DevSecOps principles established in AWS.
+
+Planned work includes:
+
+- Azure Terraform provider integration
+- Azure resource group architecture
+- Azure virtual networking
+- Azure subnet segmentation
+- Azure identity and RBAC
+- Azure security controls
+- GitHub Actions authentication to Azure
+- Reusable Terraform modules
+- Multi-cloud architecture integration
+- Monitoring and operational visibility
