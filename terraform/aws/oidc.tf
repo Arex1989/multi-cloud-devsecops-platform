@@ -85,6 +85,7 @@ resource "aws_iam_role_policy" "github_actions_read_infrastructure" {
           "ec2:DescribeNetworkInterfaces",
           "iam:GetOpenIDConnectProvider",
           "iam:GetRole",
+          "iam:GetInstanceProfile",
           "iam:ListRolePolicies",
           "iam:GetRolePolicy",
           "iam:ListAttachedRolePolicies"
