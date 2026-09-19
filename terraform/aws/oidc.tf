@@ -86,6 +86,7 @@ resource "aws_iam_role_policy" "github_actions_read_infrastructure" {
           "ec2:DescribeInstances",
           "ec2:DescribeInstanceTypes",
           "ec2:DescribeTags",
+          "ec2:DescribeInstanceAttribute",
 
           "iam:GetOpenIDConnectProvider",
           "iam:GetRole",
