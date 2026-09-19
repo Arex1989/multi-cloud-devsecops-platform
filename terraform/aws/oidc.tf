@@ -83,6 +83,8 @@ resource "aws_iam_role_policy" "github_actions_read_infrastructure" {
           "ec2:DescribeVpcEndpoints",
           "ec2:DescribePrefixLists",
           "ec2:DescribeNetworkInterfaces",
+          "ec2:DescribeInstances",
+
           "iam:GetOpenIDConnectProvider",
           "iam:GetRole",
           "iam:GetInstanceProfile",
