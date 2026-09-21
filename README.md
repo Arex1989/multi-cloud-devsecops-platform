@@ -646,19 +646,39 @@ The completed Azure workflow:
 
 The Azure compute architecture now demonstrates secure cloud workload provisioning following Infrastructure as Code and DevSecOps principles.
 
-## Next Phase
+## Current Status
 
-### Phase 6 – Azure CI/CD, Identity and Multi-Cloud Integration
+### Phase 6 – Azure CI/CD, Identity and Multi-Cloud Integration: Complete
 
-The next phase will extend the Azure environment with automated CI/CD authentication and additional multi-cloud engineering controls.
+The Azure environment has been integrated into the project's CI/CD and Infrastructure-as-Code workflow using GitHub Actions, Azure OpenID Connect federation, Azure RBAC, and remote Terraform state.
 
-Planned work includes:
+The implementation includes:
 
 - GitHub Actions authentication to Azure using OIDC
-- Azure least-privilege RBAC for CI/CD
-- Automated Azure Terraform validation and planning
-- Azure remote Terraform state
-- Reusable Terraform modules
-- Multi-cloud architecture integration
-- Monitoring and operational visibility
-- Cross-cloud security and governance validation
+- Microsoft Entra application and service principal integration
+- Federated identity credential for the GitHub main branch
+- Resource-group scoped Azure Contributor RBAC for CI/CD
+- Azure Terraform remote state using Azure Storage
+- HTTPS-only storage access with TLS 1.2
+- Private `tfstate` container for Terraform state
+- GitHub repository variables for Azure configuration
+- Secure injection of the Azure SSH public key into Terraform CI
+- Automated Azure Terraform initialization and validation
+- Automated Terraform plan against live Azure infrastructure
+- Azure CLI infrastructure verification
+
+The Azure CI/CD workflow was independently validated through GitHub Actions with a successful end-to-end run.
+
+### Azure CI/CD Validation
+
+```text
+Set up job                        PASSED
+Checkout repository               PASSED
+Setup Terraform                   PASSED
+Azure Login with OIDC             PASSED
+Terraform Init                    PASSED
+Terraform Format Check            PASSED
+Terraform Validate                PASSED
+Terraform Plan                    PASSED
+Azure CLI Verification            PASSED
+Complete job                      PASSED
