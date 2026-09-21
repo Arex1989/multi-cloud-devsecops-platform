@@ -614,21 +614,51 @@ Complete job                      PASSED
 
 The AWS infrastructure, Terraform configuration, remote state, IAM policies, and GitHub Actions pipeline are synchronized and successfully validated.
 
+
+### Phase 5 – Azure Compute and Secure Workload Deployment: Complete
+
+The Azure compute layer has been successfully implemented using Terraform Infrastructure as Code.
+
+The deployment includes:
+
+- Azure Linux virtual machine deployment
+- Secure SSH key-based authentication
+- Restricted administrative SSH access through Azure Network Security Groups
+- Managed System Assigned Identity
+- Static Azure Public IP assignment
+- Azure Network Interface configuration
+- Ubuntu 24.04 LTS operating system deployment
+- Automated Nginx web server installation and validation
+
+The Azure workload was validated through multiple independent checks:
+
+- Terraform plan verification
+- Terraform apply deployment
+- Azure CLI resource verification
+- SSH authentication using ED25519 keys
+- Linux system validation
+- Nginx service validation
+- Local HTTP health check returning HTTP 200
+
+The completed Azure workflow:
+
+`Terraform Code -> Azure VNet -> NSG Security Controls -> Linux VM -> SSH Key Authentication -> Nginx Deployment -> Application Verification`
+
+The Azure compute architecture now demonstrates secure cloud workload provisioning following Infrastructure as Code and DevSecOps principles.
+
 ## Next Phase
 
-### Phase 5 - Azure Infrastructure and Multi-Cloud Integration
+### Phase 6 – Azure CI/CD, Identity and Multi-Cloud Integration
 
-The next phase will extend the platform into Microsoft Azure using Terraform while preserving the Infrastructure-as-Code, identity, security, CI/CD, and DevSecOps principles established in AWS.
+The next phase will extend the Azure environment with automated CI/CD authentication and additional multi-cloud engineering controls.
 
 Planned work includes:
 
-- Azure Terraform provider integration
-- Azure resource group architecture
-- Azure virtual networking
-- Azure subnet segmentation
-- Azure identity and RBAC
-- Azure security controls
-- GitHub Actions authentication to Azure
+- GitHub Actions authentication to Azure using OIDC
+- Azure least-privilege RBAC for CI/CD
+- Automated Azure Terraform validation and planning
+- Azure remote Terraform state
 - Reusable Terraform modules
 - Multi-cloud architecture integration
 - Monitoring and operational visibility
+- Cross-cloud security and governance validation
