@@ -21,3 +21,8 @@ variable "project_name" {
   type        = string
   default     = "Multi-Cloud-DevSecOps-Platform"
 }
+
+variable "admin_ssh_public_key" {
+  description = "SSH public key used for the Azure Linux VM administrator"
+  type        = string
+}

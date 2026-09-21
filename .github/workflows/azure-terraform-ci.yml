@@ -21,6 +21,9 @@ jobs:
     name: Azure Terraform Validation
     runs-on: ubuntu-latest
 
+    env:
+      TF_VAR_admin_ssh_public_key: ${{ vars.AZURE_SSH_PUBLIC_KEY }}
+
     defaults:
       run:
         working-directory: terraform/azure

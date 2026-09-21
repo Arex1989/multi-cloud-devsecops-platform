@@ -38,7 +38,7 @@ resource "azurerm_linux_virtual_machine" "web" {
 
   admin_ssh_key {
     username   = "azureadmin"
-    public_key = file(pathexpand("~/.ssh/multicloud_azure_ed25519.pub"))
+    public_key = var.admin_ssh_public_key
   }
 
   identity {
