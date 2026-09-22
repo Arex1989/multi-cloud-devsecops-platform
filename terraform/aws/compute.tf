@@ -3,7 +3,7 @@ resource "aws_instance" "web" {
   ami           = "ami-056629e8f780a5e50"
   instance_type = "t4g.micro"
 
-  subnet_id              = aws_subnet.public.id
+  subnet_id              = module.network.public_subnet_id
   vpc_security_group_ids = [aws_security_group.web.id]
 
   iam_instance_profile = aws_iam_instance_profile.ec2.name

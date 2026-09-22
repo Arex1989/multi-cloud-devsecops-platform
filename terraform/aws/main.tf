@@ -1,70 +1,49 @@
-resource "aws_vpc" "main" {
-  cidr_block           = "10.20.0.0/16"
-  enable_dns_support   = true
-  enable_dns_hostnames = true
+module "network" {
+  source = "../../modules/aws/network"
 
-  tags = {
-    Name = "multicloud-devsecops-${var.environment}-vpc"
-  }
+  environment             = var.environment
+  vpc_cidr                = "10.20.0.0/16"
+  public_subnet_cidr      = var.public_subnet_cidr
+  private_app_subnet_cidr = var.private_app_subnet_cidr
+  management_subnet_cidr  = var.management_subnet_cidr
 }
 
-resource "aws_subnet" "public" {
-  vpc_id                  = aws_vpc.main.id
-  cidr_block              = var.public_subnet_cidr
-  map_public_ip_on_launch = false
-
-  tags = {
-    Name = "multicloud-devsecops-${var.environment}-public-subnet"
-    Tier = "public"
-  }
+moved {
+  from = aws_vpc.main
+  to   = module.network.aws_vpc.main
 }
 
-resource "aws_subnet" "private_app" {
-  vpc_id                  = aws_vpc.main.id
-  cidr_block              = var.private_app_subnet_cidr
-  map_public_ip_on_launch = false
-
-  tags = {
-    Name = "multicloud-devsecops-${var.environment}-private-app-subnet"
-    Tier = "private-app"
-  }
+moved {
+  from = aws_subnet.public
+  to   = module.network.aws_subnet.public
 }
 
-resource "aws_subnet" "management" {
-  vpc_id                  = aws_vpc.main.id
-  cidr_block              = var.management_subnet_cidr
-  map_public_ip_on_launch = false
-
-  tags = {
-    Name = "multicloud-devsecops-${var.environment}-management-subnet"
-    Tier = "management"
-  }
+moved {
+  from = aws_subnet.private_app
+  to   = module.network.aws_subnet.private_app
 }
 
-resource "aws_internet_gateway" "main" {
-  vpc_id = aws_vpc.main.id
-
-  tags = {
-    Name = "multicloud-devsecops-${var.environment}-igw"
-  }
+moved {
+  from = aws_subnet.management
+  to   = module.network.aws_subnet.management
 }
 
-resource "aws_route_table" "public" {
-  vpc_id = aws_vpc.main.id
-
-  tags = {
-    Name = "multicloud-devsecops-${var.environment}-public-rt"
-    Tier = "public"
-  }
+moved {
+  from = aws_internet_gateway.main
+  to   = module.network.aws_internet_gateway.main
 }
 
-resource "aws_route" "public_internet" {
-  route_table_id         = aws_route_table.public.id
-  destination_cidr_block = "0.0.0.0/0"
-  gateway_id             = aws_internet_gateway.main.id
+moved {
+  from = aws_route_table.public
+  to   = module.network.aws_route_table.public
 }
 
-resource "aws_route_table_association" "public" {
-  subnet_id      = aws_subnet.public.id
-  route_table_id = aws_route_table.public.id
+moved {
+  from = aws_route.public_internet
+  to   = module.network.aws_route.public_internet
+}
+
+moved {
+  from = aws_route_table_association.public
+  to   = module.network.aws_route_table_association.public
 }
