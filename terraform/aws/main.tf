@@ -2,6 +2,7 @@ module "security" {
   source = "../../modules/aws/security"
 
   vpc_id      = module.network.vpc_id
+  vpc_cidr    = "10.20.0.0/16"
   environment = var.environment
 }
 

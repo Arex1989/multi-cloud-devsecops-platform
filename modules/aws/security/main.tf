@@ -29,9 +29,9 @@ resource "aws_vpc_security_group_ingress_rule" "web_https" {
 
 resource "aws_vpc_security_group_egress_rule" "web_egress" {
   security_group_id = aws_security_group.web.id
-  cidr_ipv4         = "0.0.0.0/0"
+  cidr_ipv4         = var.vpc_cidr
   ip_protocol       = "-1"
-  description       = "Allow outbound traffic"
+  description       = "Allow outbound traffic within the VPC"
 }
 
 resource "aws_vpc_security_group_egress_rule" "web_s3" {
@@ -65,9 +65,9 @@ resource "aws_vpc_security_group_ingress_rule" "app_from_web" {
 
 resource "aws_vpc_security_group_egress_rule" "app_egress" {
   security_group_id = aws_security_group.app.id
-  cidr_ipv4         = "0.0.0.0/0"
+  cidr_ipv4         = var.vpc_cidr
   ip_protocol       = "-1"
-  description       = "Allow outbound traffic"
+  description       = "Allow outbound traffic within the VPC"
 }
 
 resource "aws_security_group" "vpc_endpoints" {
@@ -80,7 +80,7 @@ resource "aws_security_group" "vpc_endpoints" {
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
-    cidr_blocks = ["10.20.0.0/16"]
+    cidr_blocks = [var.vpc_cidr]
   }
 
   tags = {
@@ -91,7 +91,7 @@ resource "aws_security_group" "vpc_endpoints" {
 
 resource "aws_vpc_security_group_egress_rule" "vpc_endpoints_egress" {
   security_group_id = aws_security_group.vpc_endpoints.id
-  cidr_ipv4         = "0.0.0.0/0"
+  cidr_ipv4         = var.vpc_cidr
   ip_protocol       = "-1"
-  description       = "Allow outbound traffic"
+  description       = "Allow outbound traffic within the VPC"
 }
