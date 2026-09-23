@@ -18,7 +18,7 @@ resource "aws_vpc_endpoint" "ssm" {
   service_name        = "com.amazonaws.${var.aws_region}.ssm"
   vpc_endpoint_type   = "Interface"
   subnet_ids          = [module.network.management_subnet_id]
-  security_group_ids  = [aws_security_group.vpc_endpoints.id]
+  security_group_ids  = [module.security.vpc_endpoints_security_group_id]
   private_dns_enabled = true
 
   tags = {
@@ -32,7 +32,7 @@ resource "aws_vpc_endpoint" "ssmmessages" {
   service_name        = "com.amazonaws.${var.aws_region}.ssmmessages"
   vpc_endpoint_type   = "Interface"
   subnet_ids          = [module.network.management_subnet_id]
-  security_group_ids  = [aws_security_group.vpc_endpoints.id]
+  security_group_ids  = [module.security.vpc_endpoints_security_group_id]
   private_dns_enabled = true
 
   tags = {

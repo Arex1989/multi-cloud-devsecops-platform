@@ -682,3 +682,61 @@ Terraform Validate                PASSED
 Terraform Plan                    PASSED
 Azure CLI Verification            PASSED
 Complete job                      PASSED
+
+
+## Phase 7 — Reusable AWS Terraform Modules
+
+### Status: Complete
+
+Phase 7 refactored the existing AWS infrastructure into reusable Terraform modules while preserving the deployed infrastructure and Terraform state.
+
+### AWS Network Module
+
+The AWS networking layer was migrated into:
+
+`modules/aws/network/`
+
+The reusable network module manages:
+
+- VPC
+- Public subnet
+- Private application subnet
+- Management subnet
+- Internet Gateway
+- Public route table
+- Internet route
+- Public subnet route-table association
+
+Terraform `moved` blocks were used to migrate existing resources into the module without destroying or recreating the live infrastructure.
+
+### AWS Security Module
+
+The AWS security layer was migrated into:
+
+`modules/aws/security/`
+
+The reusable security module manages:
+
+- Web security group
+- Application security group
+- VPC interface endpoint security group
+- HTTP and HTTPS ingress rules
+- Web-to-application traffic rules
+- S3 endpoint access
+- Security-group egress rules
+
+Existing security resources were migrated into the module using Terraform state-aware refactoring.
+
+### Phase 7 Validation
+
+The refactor was validated against the existing AWS environment.
+
+```text
+Terraform validation: PASSED
+Network module migration: PASSED
+Security module migration: PASSED
+Infrastructure recreation: NONE
+Final Terraform plan: NO CHANGES
+Resources added: 0
+Resources changed: 0
+Resources destroyed: 0

@@ -4,7 +4,7 @@ resource "aws_instance" "web" {
   instance_type = "t4g.micro"
 
   subnet_id              = module.network.public_subnet_id
-  vpc_security_group_ids = [aws_security_group.web.id]
+  vpc_security_group_ids = [module.security.web_security_group_id]
 
   iam_instance_profile = aws_iam_instance_profile.ec2.name
 
