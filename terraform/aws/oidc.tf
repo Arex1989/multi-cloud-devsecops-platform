@@ -98,6 +98,8 @@ resource "aws_iam_role_policy" "github_actions_read_infrastructure" {
           "iam:ListAttachedRolePolicies",
           "sns:GetTopicAttributes",
           "logs:DescribeLogGroups",
+          "sns:ListTagsForResource",
+          "logs:ListTagsForResource",
         ]
 
         Resource = "*"
