@@ -16,6 +16,20 @@ module "network" {
   management_subnet_cidr  = var.management_subnet_cidr
 }
 
+module "monitoring" {
+  source = "../../modules/aws/monitoring"
+
+  environment = var.environment
+  instance_id = aws_instance.web.id
+
+  # Leave empty for now unless you want CloudWatch to send
+  # alarm notifications to an email address.
+  alarm_email = ""
+
+  cpu_alarm_threshold = 80
+  log_retention_days  = 14
+}
+
 moved {
   from = aws_vpc.main
   to   = module.network.aws_vpc.main

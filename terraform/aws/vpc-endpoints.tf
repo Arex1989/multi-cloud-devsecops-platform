@@ -40,3 +40,19 @@ resource "aws_vpc_endpoint" "ssmmessages" {
     Tier = "management"
   }
 }
+
+resource "aws_vpc_endpoint" "logs" {
+  vpc_id            = module.network.vpc_id
+  service_name      = "com.amazonaws.${var.aws_region}.logs"
+  vpc_endpoint_type = "Interface"
+
+  subnet_ids         = [module.network.management_subnet_id]
+  security_group_ids = [module.security.vpc_endpoints_security_group_id]
+
+  private_dns_enabled = true
+
+  tags = {
+    Name = "multicloud-devsecops-${var.environment}-logs-endpoint"
+    Tier = "management"
+  }
+}
