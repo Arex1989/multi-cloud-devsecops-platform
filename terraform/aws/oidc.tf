@@ -93,9 +93,11 @@ resource "aws_iam_role_policy" "github_actions_read_infrastructure" {
           "iam:GetOpenIDConnectProvider",
           "iam:GetRole",
           "iam:GetInstanceProfile",
-          "iam:ListRolePolicies",
+          "iam:ListRoles",
           "iam:GetRolePolicy",
-          "iam:ListAttachedRolePolicies"
+          "iam:ListAttachedRolePolicies",
+          "sns:GetTopicAttributes",
+          "logs:DescribeLogGroups",
         ]
 
         Resource = "*"
