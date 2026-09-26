@@ -508,7 +508,7 @@ Local Terraform state and provider working directories are intentionally exclude
 - [ ] Azure Terraform infrastructure
 - [ ] Azure identity and networking
 - [ ] Reusable Terraform modules
-- [ ] Monitoring and logging
+- [x] Monitoring and logging
 - [ ] Multi-cloud architecture documentation
 
 ## Current Status
@@ -781,3 +781,140 @@ Resources added: 0
 Resources changed: 1
 Resources destroyed: 0
 Final Terraform plan: NO CHANGES
+
+## Phase 9 – AWS Monitoring, Logging and Observability
+
+### Status: Complete
+
+Phase 9 introduced a Terraform-managed monitoring, logging, alerting, and observability layer for the AWS web workload.
+
+The implementation extends the existing AWS infrastructure with centralized CloudWatch logging, infrastructure alarms, SNS notifications, private AWS service connectivity, customer-managed encryption, and automated CI/CD security validation.
+
+### Monitoring Architecture
+
+The monitoring layer includes:
+
+- Amazon CloudWatch Logs for centralized Nginx logging
+- CloudWatch Agent integration with the EC2 web tier
+- Nginx access and error log streams
+- CloudWatch high-CPU alarm
+- EC2 instance-status-check alarm
+- Amazon SNS alert topic
+- Customer-managed AWS KMS encryption for SNS
+- Automatic KMS key rotation
+- Terraform-managed KMS alias
+- CloudWatch Logs Interface VPC Endpoint
+- Private DNS for the CloudWatch Logs endpoint
+- Terraform-managed monitoring module
+- GitHub Actions CI validation
+- Trivy Infrastructure-as-Code security scanning
+
+The monitoring infrastructure is managed through:
+
+`modules/aws/monitoring/`
+
+### Centralized Nginx Logging
+
+The Amazon CloudWatch Agent collects application logs from the EC2 web tier.
+
+The monitored files include:
+
+```text
+/var/log/nginx/access.log
+/var/log/nginx/error.log
+```
+
+CloudWatch log streams were successfully created for both Nginx access and error events, providing centralized visibility into web requests and application errors.
+
+The logging architecture uses private AWS service connectivity through a CloudWatch Logs Interface VPC Endpoint with Private DNS enabled.
+
+### CloudWatch Monitoring and Alerting
+
+Terraform manages CloudWatch alarms for the deployed EC2 workload.
+
+The monitoring configuration includes:
+
+```text
+EC2 Web Instance
+       |
+       +--> CloudWatch Agent
+       |        |
+       |        +--> Nginx Access Logs
+       |        +--> Nginx Error Logs
+       |
+       +--> CloudWatch Metrics
+                |
+                +--> High CPU Alarm
+                +--> Instance Status Check Alarm
+                         |
+                         v
+                     SNS Alerts
+                         |
+                         v
+                  KMS Encryption
+```
+
+This provides both log-based operational visibility and metric-based infrastructure monitoring.
+
+### SNS and KMS Security
+
+The SNS alert topic is encrypted using a dedicated customer-managed AWS KMS key rather than the default AWS-managed SNS key.
+
+The KMS implementation includes:
+
+- Customer-managed symmetric KMS key
+- Automatic key rotation
+- Terraform-managed KMS alias
+- Terraform resource tagging
+- SNS server-side encryption
+
+The implementation was introduced after Trivy IaC scanning identified the original SNS encryption configuration as insufficient for the project's security policy.
+
+The remediation lifecycle was:
+
+`Detect -> Analyze -> Remediate -> Plan -> Apply -> Verify -> Re-scan -> Pass`
+
+### CI/CD Least-Privilege IAM
+
+The GitHub Actions OIDC role was incrementally extended with the read-only permissions Terraform required to refresh the monitoring infrastructure.
+
+These included read operations for:
+
+- CloudWatch Logs
+- CloudWatch alarms
+- SNS topics and resource tags
+- IAM roles and policies
+- KMS keys
+- KMS key policies
+- KMS rotation status
+- KMS resource tags
+- KMS aliases
+
+This preserved the project's least-privilege approach while allowing Terraform CI to inspect the live AWS environment.
+
+### Phase 9 Validation
+
+The final GitHub Actions Terraform CI pipeline completed successfully.
+
+```text
+AWS OIDC Authentication        PASSED
+AWS Network Read Access        PASSED
+Terraform Format Check         PASSED
+Terraform Init                 PASSED
+Terraform Validate             PASSED
+Terraform Plan                 PASSED
+Trivy IaC Security Scan        PASSED
+Terraform Validation Workflow  PASSED
+```
+
+The final local Terraform verification also returned:
+
+```text
+No changes. Your infrastructure matches the configuration.
+```
+
+### Phase 9 Result
+
+Phase 9 completed the AWS observability foundation with centralized logging, infrastructure monitoring, encrypted alerting, private CloudWatch connectivity, automated security scanning, and GitHub Actions validation.
+
+**Phase 9 milestone status: COMPLETE**
