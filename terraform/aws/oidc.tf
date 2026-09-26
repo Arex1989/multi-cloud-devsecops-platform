@@ -95,6 +95,7 @@ resource "aws_iam_role_policy" "github_actions_read_infrastructure" {
           "iam:GetInstanceProfile",
           "iam:ListRoles",
           "iam:GetRolePolicy",
+          "iam:ListRolePolicies",
           "iam:ListAttachedRolePolicies",
           "sns:GetTopicAttributes",
           "logs:DescribeLogGroups",
