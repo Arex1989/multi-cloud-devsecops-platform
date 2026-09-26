@@ -101,6 +101,7 @@ resource "aws_iam_role_policy" "github_actions_read_infrastructure" {
           "logs:DescribeLogGroups",
           "sns:ListTagsForResource",
           "logs:ListTagsForResource",
+          "cloudwatch:DescribeAlarms",
         ]
 
         Resource = "*"
