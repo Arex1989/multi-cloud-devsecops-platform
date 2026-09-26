@@ -1,12 +1,13 @@
 # SNS topic used by CloudWatch alarms
 resource "aws_sns_topic" "alerts" {
-  name = "multicloud-devsecops-${var.environment}-alerts"
+  name              = "multicloud-devsecops-${var.environment}-alerts"
+  kms_master_key_id = "alias/aws/sns"
 
   tags = {
     Name        = "multicloud-devsecops-${var.environment}-alerts"
     Environment = var.environment
-    ManagedBy   = "Terraform"
-    Project     = "Multi-Cloud-DevSecOps-Platform"
+    ManagedBy    = "Terraform"
+    Project      = "Multi-Cloud-DevSecOps-Platform"
   }
 }
 
