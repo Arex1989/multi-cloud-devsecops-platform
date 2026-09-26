@@ -6,11 +6,13 @@ on:
       - main
     paths:
       - "terraform/**"
+      - "modules/**"
       - ".github/workflows/terraform-ci.yml"
 
   pull_request:
     paths:
       - "terraform/**"
+      - "modules/**"
       - ".github/workflows/terraform-ci.yml"
 
 permissions:
