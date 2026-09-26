@@ -1,7 +1,26 @@
 # SNS topic used by CloudWatch alarms
+
+resource "aws_kms_key" "sns" {
+  description             = "KMS key for Multi-Cloud DevSecOps SNS alerts"
+  deletion_window_in_days = 7
+  enable_key_rotation     = true
+
+  tags = {
+    Name        = "multicloud-devsecops-${var.environment}-sns-kms"
+    Environment = var.environment
+    ManagedBy   = "Terraform"
+    Project     = "Multi-Cloud-DevSecOps-Platform"
+  }
+}
+
+resource "aws_kms_alias" "sns" {
+  name          = "alias/multicloud-devsecops-${var.environment}-sns"
+  target_key_id = aws_kms_key.sns.key_id
+}
+
 resource "aws_sns_topic" "alerts" {
   name              = "multicloud-devsecops-${var.environment}-alerts"
-  kms_master_key_id = "alias/aws/sns"
+  kms_master_key_id = aws_kms_key.sns.arn
 
   tags = {
     Name        = "multicloud-devsecops-${var.environment}-alerts"
