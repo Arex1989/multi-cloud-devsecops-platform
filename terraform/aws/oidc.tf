@@ -102,6 +102,7 @@ resource "aws_iam_role_policy" "github_actions_read_infrastructure" {
           "sns:ListTagsForResource",
           "logs:ListTagsForResource",
           "kms:DescribeKey",
+          "kms:GetKeyPolicy",
           "cloudwatch:DescribeAlarms",
           "cloudwatch:ListTagsForResource",
         ]
