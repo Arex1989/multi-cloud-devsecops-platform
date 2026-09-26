@@ -104,6 +104,7 @@ resource "aws_iam_role_policy" "github_actions_read_infrastructure" {
           "kms:DescribeKey",
           "kms:GetKeyPolicy",
           "kms:GetKeyRotationStatus",
+          "kms:ListResourceTags",
           "cloudwatch:DescribeAlarms",
           "cloudwatch:ListTagsForResource",
         ]
