@@ -15,7 +15,7 @@ resource "azurerm_network_interface" "web" {
 
   ip_configuration {
     name                          = "web-ipconfig"
-    subnet_id                     = azurerm_subnet.web.id
+    subnet_id                     = module.network.web_subnet_id
     private_ip_address_allocation = "Dynamic"
     public_ip_address_id          = azurerm_public_ip.web.id
   }

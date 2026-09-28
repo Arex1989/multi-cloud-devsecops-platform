@@ -15,25 +15,25 @@ output "resource_group_id" {
 
 output "azure_vnet_id" {
   description = "Azure virtual network ID"
-  value       = azurerm_virtual_network.main.id
+  value       = module.network.vnet_id
 }
 
 output "azure_vnet_address_space" {
   description = "Azure virtual network address space"
-  value       = azurerm_virtual_network.main.address_space
+  value       = module.network.vnet_address_space
 }
 
 output "azure_web_subnet_id" {
   description = "Azure web subnet ID"
-  value       = azurerm_subnet.web.id
+  value       = module.network.web_subnet_id
 }
 
 output "azure_application_subnet_id" {
   description = "Azure application subnet ID"
-  value       = azurerm_subnet.application.id
+  value       = module.network.application_subnet_id
 }
 
 output "azure_management_subnet_id" {
   description = "Azure management subnet ID"
-  value       = azurerm_subnet.management.id
+  value       = module.network.management_subnet_id
 }

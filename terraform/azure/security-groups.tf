@@ -49,17 +49,17 @@ resource "azurerm_network_security_group" "management" {
 }
 
 resource "azurerm_subnet_network_security_group_association" "web" {
-  subnet_id                 = azurerm_subnet.web.id
+  subnet_id                 = module.network.web_subnet_id
   network_security_group_id = azurerm_network_security_group.web.id
 }
 
 resource "azurerm_subnet_network_security_group_association" "application" {
-  subnet_id                 = azurerm_subnet.application.id
+  subnet_id                 = module.network.application_subnet_id
   network_security_group_id = azurerm_network_security_group.application.id
 }
 
 resource "azurerm_subnet_network_security_group_association" "management" {
-  subnet_id                 = azurerm_subnet.management.id
+  subnet_id                 = module.network.management_subnet_id
   network_security_group_id = azurerm_network_security_group.management.id
 }
 
