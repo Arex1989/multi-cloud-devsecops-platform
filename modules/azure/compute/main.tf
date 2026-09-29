@@ -1,32 +1,32 @@
 resource "azurerm_public_ip" "web" {
   name                = "pip-multicloud-dev-web"
-  location            = data.azurerm_resource_group.main.location
-  resource_group_name = data.azurerm_resource_group.main.name
+  location            = var.location
+  resource_group_name = var.resource_group_name
   allocation_method   = "Static"
   sku                 = "Standard"
 
-  tags = local.common_tags
+  tags = var.tags
 }
 
 resource "azurerm_network_interface" "web" {
   name                = "nic-multicloud-dev-web"
-  location            = data.azurerm_resource_group.main.location
-  resource_group_name = data.azurerm_resource_group.main.name
+  location            = var.location
+  resource_group_name = var.resource_group_name
 
   ip_configuration {
     name                          = "web-ipconfig"
-    subnet_id                     = module.network.web_subnet_id
+    subnet_id                     = var.web_subnet_id
     private_ip_address_allocation = "Dynamic"
     public_ip_address_id          = azurerm_public_ip.web.id
   }
 
-  tags = local.common_tags
+  tags = var.tags
 }
 
 resource "azurerm_linux_virtual_machine" "web" {
   name                = "vm-multicloud-dev-web"
-  resource_group_name = data.azurerm_resource_group.main.name
-  location            = data.azurerm_resource_group.main.location
+  resource_group_name = var.resource_group_name
+  location            = var.location
   size                = "Standard_D2nls_v6"
   admin_username      = "azureadmin"
 
@@ -71,5 +71,5 @@ resource "azurerm_linux_virtual_machine" "web" {
   CLOUDINIT
   )
 
-  tags = local.common_tags
+  tags = var.tags
 }

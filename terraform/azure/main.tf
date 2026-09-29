@@ -51,3 +51,28 @@ moved {
   from = azurerm_subnet.management
   to   = module.network.azurerm_subnet.management
 }
+module "compute" {
+  source = "../../modules/azure/compute"
+
+  resource_group_name  = data.azurerm_resource_group.main.name
+  location             = data.azurerm_resource_group.main.location
+  web_subnet_id        = module.network.web_subnet_id
+  admin_ssh_public_key = var.admin_ssh_public_key
+
+  tags = local.common_tags
+}
+
+moved {
+  from = azurerm_public_ip.web
+  to   = module.compute.azurerm_public_ip.web
+}
+
+moved {
+  from = azurerm_network_interface.web
+  to   = module.compute.azurerm_network_interface.web
+}
+
+moved {
+  from = azurerm_linux_virtual_machine.web
+  to   = module.compute.azurerm_linux_virtual_machine.web
+}
