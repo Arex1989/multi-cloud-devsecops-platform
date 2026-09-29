@@ -505,9 +505,9 @@ Local Terraform state and provider working directories are intentionally exclude
 - [x] GitHub Actions live AWS infrastructure refresh
 - [x] End-to-end Terraform CI validation
 - [x] Successful Trivy security validation
-- [ ] Azure Terraform infrastructure
-- [ ] Azure identity and networking
-- [ ] Reusable Terraform modules
+- [x] Azure Terraform infrastructure
+- [x] Azure identity and networking
+- [x] Reusable Terraform modules
 - [x] Monitoring and logging
 - [ ] Multi-cloud architecture documentation
 
@@ -682,6 +682,7 @@ Terraform Validate                PASSED
 Terraform Plan                    PASSED
 Azure CLI Verification            PASSED
 Complete job                      PASSED
+```
 
 
 ## Phase 7 — Reusable AWS Terraform Modules
@@ -738,8 +739,8 @@ Security module migration: PASSED
 Infrastructure recreation: NONE
 Final Terraform plan: NO CHANGES
 Resources added: 0
-Resources changed: 0
 Resources destroyed: 0
+```
 
 ## Phase 8 - AWS Security Hardening and CI Validation
 
@@ -781,6 +782,7 @@ Resources added: 0
 Resources changed: 1
 Resources destroyed: 0
 Final Terraform plan: NO CHANGES
+```
 
 ## Phase 9 – AWS Monitoring, Logging and Observability
 
@@ -918,3 +920,171 @@ No changes. Your infrastructure matches the configuration.
 Phase 9 completed the AWS observability foundation with centralized logging, infrastructure monitoring, encrypted alerting, private CloudWatch connectivity, automated security scanning, and GitHub Actions validation.
 
 **Phase 9 milestone status: COMPLETE**
+
+## Phase 10 - Azure Terraform Modularization and Architecture Refactoring
+
+Phase 10 refactored the existing Azure Terraform infrastructure into reusable modules while preserving the deployed infrastructure and Terraform state.
+
+The objective of this phase was to improve maintainability, reusability, separation of concerns, and long-term scalability without destroying or recreating existing Azure resources.
+
+### Azure Modular Architecture
+
+The Azure infrastructure is now organized into three reusable Terraform modules:
+
+```text
+modules/azure/
+├── network/
+│   ├── main.tf
+│   ├── variables.tf
+│   └── outputs.tf
+├── security/
+│   ├── main.tf
+│   ├── variables.tf
+│   └── outputs.tf
+└── compute/
+    ├── main.tf
+    ├── variables.tf
+    └── outputs.tf
+```
+
+The modules separate Azure networking, security, and compute responsibilities while exposing outputs that allow the modules to integrate without hard-coded resource dependencies.
+
+### Azure Network Module
+
+The network module manages:
+
+- Azure Virtual Network
+- Web subnet
+- Application subnet
+- Management subnet
+- Network outputs consumed by other modules
+
+Existing network resources were migrated from root-module Terraform addresses into `module.network` using Terraform `moved` blocks.
+
+This preserved the existing Azure resources while changing their Terraform state addresses.
+
+
+### Azure Security Module
+
+The security module separates Azure network security controls from the networking layer and manages:
+
+- Web Network Security Group
+- Application Network Security Group
+- Management Network Security Group
+- HTTPS inbound security rule
+- Restricted administrative SSH rule
+- NSG-to-subnet associations
+
+The module consumes subnet IDs exposed by `module.network`, establishing a clear dependency between the networking and security layers.
+
+Existing NSGs, security rules, and subnet associations were migrated into `module.security` using Terraform `moved` blocks. The migration completed without recreating or destroying the deployed Azure security resources.
+
+### Azure Compute Module
+
+The compute module manages the Azure web workload, including:
+
+- Static Standard public IP address
+- Azure network interface
+- Linux virtual machine
+- SSH key authentication
+- System-assigned managed identity
+- Ubuntu 24.04 LTS image configuration
+- Nginx installation and initialization through cloud-init
+
+The compute module consumes the web subnet ID from `module.network`, allowing compute resources to depend on networking through module outputs rather than direct root-module resource references.
+
+Existing compute resources were migrated into `module.compute` using Terraform `moved` blocks while preserving the deployed VM, network interface, public IP address, and Terraform state.
+
+
+### State-Aware Terraform Refactoring
+
+A key requirement of Phase 10 was to modularize the existing Azure configuration without destroying or recreating live infrastructure.
+
+Terraform `moved` blocks were used to transition existing resource addresses from the root module into their corresponding reusable modules.
+
+The migration followed this pattern:
+
+```text
+Root Terraform Resources
+        |
+        +--> module.network
+        |      +--> Virtual Network
+        |      +--> Web Subnet
+        |      +--> Application Subnet
+        |      +--> Management Subnet
+        |
+        +--> module.security
+        |      +--> Network Security Groups
+        |      +--> Security Rules
+        |      +--> Subnet/NSG Associations
+        |
+        +--> module.compute
+               +--> Public IP
+               +--> Network Interface
+               +--> Linux Virtual Machine
+```
+
+Terraform recognized these operations as state-address migrations rather than infrastructure replacements.
+
+### Phase 10 Validation
+
+Each modularization stage was independently validated before proceeding to the next layer.
+
+The validation lifecycle was:
+
+```text
+Refactor -> Format -> Init -> Validate -> Plan -> Apply State Migration -> Re-Plan -> CI Validation
+```
+
+The final Terraform validation returned:
+
+```text
+Success! The configuration is valid.
+```
+
+The final Terraform plan returned:
+
+```text
+No changes. Your infrastructure matches the configuration.
+```
+
+The completed migrations therefore resulted in:
+
+```text
+0 to add
+0 to change
+0 to destroy
+```
+
+Terraform state now tracks the Azure resources through `module.network`, `module.security`, and `module.compute` while the deployed Azure infrastructure remains unchanged.
+
+### CI/CD Verification
+
+The Azure Terraform GitHub Actions workflow successfully validated each major Phase 10 refactoring milestone.
+
+Successful CI runs were recorded for:
+
+- Azure network infrastructure modularization
+- Azure security infrastructure modularization
+- Azure compute infrastructure modularization
+
+This confirms that the modular architecture passes the automated Azure Terraform CI validation pipeline in addition to local Terraform validation.
+
+
+### Phase 10 Result
+
+Phase 10 successfully transformed the Azure Terraform implementation from a root-module-oriented configuration into a reusable modular architecture while preserving the existing deployed infrastructure and Terraform state.
+
+The completed Azure architecture now provides:
+
+- Reusable network, security, and compute Terraform modules
+- Clear separation of infrastructure responsibilities
+- Module-to-module integration through explicit inputs and outputs
+- State-aware migration using Terraform `moved` blocks
+- Zero resource destruction or recreation during refactoring
+- Successful local Terraform validation and planning
+- Successful automated GitHub Actions Azure Terraform CI validation
+
+The Azure infrastructure remains synchronized with Terraform with no configuration drift detected after the modularization.
+
+**Phase 10 milestone status: COMPLETE**
