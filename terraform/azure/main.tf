@@ -76,3 +76,15 @@ moved {
   from = azurerm_linux_virtual_machine.web
   to   = module.compute.azurerm_linux_virtual_machine.web
 }
+
+module "monitoring" {
+  source = "../../modules/azure/monitoring"
+
+  resource_group_name = data.azurerm_resource_group.main.name
+  location            = data.azurerm_resource_group.main.location
+
+  virtual_machine_id   = module.compute.virtual_machine_id
+  virtual_machine_name = module.compute.virtual_machine_name
+
+  tags = local.common_tags
+}
