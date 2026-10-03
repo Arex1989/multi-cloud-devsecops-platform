@@ -39,3 +39,5 @@ tfplan
 # Temporary files
 *.tmp
 *.swp
+# Local project backups
+backups/
