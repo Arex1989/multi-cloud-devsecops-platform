@@ -1,25 +1,161 @@
 # Multi-Cloud DevSecOps Infrastructure Automation Platform
 
-A hands-on multi-cloud infrastructure engineering project designed to automate secure AWS and Microsoft Azure infrastructure using Terraform, GitHub Actions, Infrastructure as Code (IaC), and DevSecOps practices.
+A hands-on multi-cloud infrastructure engineering project designed to automate, secure, validate, monitor, and operate infrastructure across **Amazon Web Services (AWS)** and **Microsoft Azure** using Terraform, GitHub Actions, Infrastructure as Code (IaC), federated identity, automated security scanning, monitoring, logging, and DevSecOps practices.
+
+The platform was developed incrementally through **11 engineering phases**, progressing from foundational AWS networking to multi-cloud infrastructure, secure CI/CD, reusable Terraform modules, security hardening, observability, state-aware refactoring, and full infrastructure lifecycle management.
+
+---
+
+## Project Status
+
+**Project 3: COMPLETE**
+
+```text
+Infrastructure Engineering       COMPLETE
+AWS Infrastructure               COMPLETE
+Azure Infrastructure             COMPLETE
+Terraform IaC                    COMPLETE
+AWS CI/CD                        COMPLETE
+Azure CI/CD                      COMPLETE
+GitHub OIDC Federation           COMPLETE
+Security Hardening               COMPLETE
+Terraform Modularization         COMPLETE
+AWS Observability                COMPLETE
+Azure Observability              COMPLETE
+Infrastructure Validation        COMPLETE
+AWS Lifecycle Teardown           COMPLETE
+Portfolio Documentation          COMPLETE
+```
+
+---
 
 ## Project Objectives
 
-This project demonstrates practical Cloud and Infrastructure Engineering capabilities across:
+This project demonstrates practical Cloud, Infrastructure, DevOps, and DevSecOps engineering capabilities across:
 
 - Amazon Web Services (AWS)
 - Microsoft Azure
 - Terraform Infrastructure as Code
 - Multi-cloud networking
+- Linux workload deployment
 - Identity and access management
 - Git-based infrastructure change management
-- CI/CD with GitHub Actions
+- GitHub Actions CI/CD
+- OpenID Connect federation
 - Infrastructure security scanning
-- Automated validation and deployment
-- Monitoring and operational visibility
+- Automated validation
+- Reusable Terraform modules
+- State-aware infrastructure refactoring
+- Centralized logging
+- Infrastructure monitoring
+- Metric-based alerting
+- Secure remote Terraform state
+- Infrastructure lifecycle management
+- Cloud cost-conscious teardown
 
-## Current Architecture
+---
 
-### AWS Environment
+# Architecture Overview
+
+The completed platform implemented equivalent infrastructure engineering patterns across AWS and Azure while using cloud-native services appropriate to each provider.
+
+```mermaid
+flowchart TB
+
+    ENG["Cloud / Infrastructure Engineer"]
+    GH["GitHub Repository"]
+    GHA["GitHub Actions CI/CD"]
+    TF["Terraform"]
+
+    ENG --> GH
+    GH --> GHA
+    GHA --> TF
+
+    TF --> AWS
+    TF --> AZURE
+
+    subgraph AWS["Amazon Web Services"]
+        AVPC["VPC 10.20.0.0/16"]
+        PUB["Public Subnet"]
+        APP["Private Application Subnet"]
+        MGMT["Management Subnet"]
+        EC2["EC2 Web Tier"]
+        SSM["AWS Systems Manager"]
+        VPCE["VPC Endpoints"]
+        CW["CloudWatch"]
+        SNS["SNS Alerts"]
+        KMS["Customer Managed KMS"]
+        S3["S3 Terraform State"]
+
+        AVPC --> PUB
+        AVPC --> APP
+        AVPC --> MGMT
+        PUB --> EC2
+        EC2 --> SSM
+        EC2 --> VPCE
+        EC2 --> CW
+        CW --> SNS
+        SNS --> KMS
+    end
+
+    subgraph AZURE["Microsoft Azure"]
+        VNET["Azure VNet 10.30.0.0/16"]
+        WEB["Web Subnet"]
+        AAPP["Application Subnet"]
+        AMGMT["Management Subnet"]
+        NSG["Network Security Groups"]
+        VM["Ubuntu Linux VM"]
+        AMA["Azure Monitor Agent"]
+        DCR["Data Collection Rule"]
+        LAW["Log Analytics Workspace"]
+
+        VNET --> WEB
+        VNET --> AAPP
+        VNET --> AMGMT
+        WEB --> NSG
+        NSG --> VM
+        VM --> AMA
+        AMA --> DCR
+        DCR --> LAW
+    end
+```
+
+---
+
+# CI/CD and Federated Identity Architecture
+
+Both cloud environments were integrated with GitHub Actions using short-lived federated credentials rather than storing permanent cloud credentials in GitHub.
+
+```mermaid
+flowchart LR
+
+    DEV["Git Push / Pull Request"]
+    GH["GitHub Actions"]
+
+    DEV --> GH
+
+    GH --> CHECK["Terraform fmt / validate"]
+    CHECK --> SEC["Trivy IaC Scan"]
+
+    SEC --> AWSOIDC["AWS OIDC"]
+    SEC --> AZOIDC["Azure OIDC"]
+
+    AWSOIDC --> STS["AWS STS"]
+    STS --> AWSROLE["AWS CI IAM Role"]
+    AWSROLE --> AWSPLAN["AWS Terraform Plan"]
+
+    AZOIDC --> ENTRA["Microsoft Entra ID"]
+    ENTRA --> RBAC["Azure RBAC"]
+    RBAC --> AZPLAN["Azure Terraform Plan"]
+```
+
+The architecture eliminates long-lived cloud access keys from the GitHub CI/CD workflow.
+
+---
+
+# AWS Architecture
+
+## AWS Environment
 
 **Region:** `eu-central-1` (Frankfurt)
 
@@ -27,45 +163,46 @@ This project demonstrates practical Cloud and Infrastructure Engineering capabil
 
 | Network Tier | CIDR | Purpose |
 | --- | --- | --- |
-| Public | `10.20.1.0/24` | Internet-facing resources |
+| Public | `10.20.1.0/24` | Internet-facing workload |
 | Private Application | `10.20.10.0/24` | Private application workloads |
-| Management | `10.20.20.0/24` | Infrastructure management resources |
+| Management | `10.20.20.0/24` | Infrastructure management |
 
-The public subnet uses a dedicated route table with a default IPv4 route (`0.0.0.0/0`) through an AWS Internet Gateway.
+The public subnet used a dedicated route table with a default IPv4 route through an AWS Internet Gateway.
 
-The private application and management subnets remain isolated from direct Internet Gateway routing.
+Private application and management networks remained isolated from direct Internet Gateway routing.
 
-### AWS Network Design
+```mermaid
+flowchart TB
 
-```text
-                         Internet
-                            |
-                            v
-                    Internet Gateway
-                            |
-                            v
-                   Public Route Table
-                     0.0.0.0/0 -> IGW
-                            |
-                            v
-AWS VPC: 10.20.0.0/16
-|
-+-- Public Subnet
-|   10.20.1.0/24
-|   EC2 Web Tier
-|
-+-- Private Application Subnet
-|   10.20.10.0/24
-|   No direct Internet Gateway route
-|
-+-- Management Subnet
-    10.20.20.0/24
-    SSM / Management Connectivity
+    INTERNET["Internet"]
+    IGW["Internet Gateway"]
+    RT["Public Route Table<br/>0.0.0.0/0"]
+    VPC["AWS VPC<br/>10.20.0.0/16"]
+
+    PUBLIC["Public Subnet<br/>10.20.1.0/24"]
+    PRIVATE["Private Application Subnet<br/>10.20.10.0/24"]
+    MANAGEMENT["Management Subnet<br/>10.20.20.0/24"]
+
+    EC2["EC2 Web Tier"]
+    SSM["SSM / Management Connectivity"]
+
+    INTERNET --> IGW
+    IGW --> RT
+    RT --> PUBLIC
+
+    VPC --> PUBLIC
+    VPC --> PRIVATE
+    VPC --> MANAGEMENT
+
+    PUBLIC --> EC2
+    MANAGEMENT --> SSM
 ```
+
+---
 
 ## AWS Infrastructure Implemented
 
-The current AWS environment includes:
+The AWS environment included:
 
 - VPC with DNS support and DNS hostnames
 - Public subnet
@@ -74,152 +211,161 @@ The current AWS environment includes:
 - Internet Gateway
 - Dedicated public route table
 - Default Internet route
-- Public subnet route table association
-- Web and application security groups
-- Dedicated VPC endpoint security group
+- Public subnet route-table association
+- Web security group
+- Application security group
+- VPC endpoint security group
 - Controlled ingress and egress rules
-- Amazon EC2 web tier using Amazon Linux 2023 ARM64
-- `t4g.micro` EC2 compute instance
+- EC2 web tier
+- Amazon Linux 2023 ARM64
+- `t4g.micro` compute
 - Encrypted GP3 EBS storage
-- IMDSv2 enforced on the EC2 instance
-- IAM role and instance profile for EC2
-- AWS Systems Manager integration
-- Amazon S3 Gateway VPC Endpoint
-- SSM Interface VPC Endpoint
-- SSM Messages Interface VPC Endpoint
-- Nginx web service deployed and validated
-- Standardized Terraform resource tagging
-- Terraform outputs for infrastructure IDs
-- IAM Identity Center authentication for local administration
-- GitHub OIDC federation for CI/CD authentication
-- Remote Terraform state using Amazon S3
-
-All deployed AWS infrastructure is managed through Terraform rather than manual resource creation.
-
-## AWS Compute Layer
-
-The project now includes a Terraform-managed Amazon EC2 web tier.
-
-The EC2 implementation includes:
-
-- Amazon Linux 2023
-- ARM64 architecture
-- `t4g.micro` instance type
-- Encrypted GP3 root volume
 - IMDSv2 enforcement
-- Dedicated security group
-- Terraform-managed IAM instance profile
-- AWS Systems Manager integration
-- Automated Nginx web server deployment
-- Infrastructure tagging for environment, project, tier, and management ownership
-
-The EC2 instance is managed as Infrastructure as Code and participates in the same Terraform validation and GitHub Actions CI workflow as the networking layer.
-
-## AWS Systems Manager
-
-The EC2 web tier is integrated with AWS Systems Manager (SSM).
-
-A dedicated IAM role and instance profile provide the EC2 instance with the required Systems Manager permissions.
-
-Private AWS service connectivity is supported through:
-
+- EC2 IAM role and instance profile
+- AWS Systems Manager
+- S3 Gateway VPC Endpoint
 - SSM Interface VPC Endpoint
 - SSM Messages Interface VPC Endpoint
-- Amazon S3 Gateway VPC Endpoint
+- CloudWatch Logs VPC Endpoint
+- Nginx web service
+- CloudWatch logging
+- CloudWatch alarms
+- SNS alerting
+- Customer-managed KMS encryption
+- Terraform resource tagging
+- Terraform outputs
+- IAM Identity Center
+- GitHub OIDC federation
+- Remote Terraform state using S3
 
-The SSM Agent was successfully verified as:
+All workload infrastructure was created and managed through Terraform.
 
-```text
-Online
+---
+
+# Azure Architecture
+
+The Azure implementation provided the second cloud environment for the project.
+
+**Region:** UK South
+
+**VNet:** `10.30.0.0/16`
+
+The Azure architecture included:
+
+- Azure Virtual Network
+- Web subnet
+- Application subnet
+- Management subnet
+- Network Security Groups
+- Static Standard Public IP
+- Network Interface
+- Ubuntu 24.04 LTS Linux VM
+- ED25519 SSH authentication
+- System-assigned Managed Identity
+- Nginx
+- Azure Storage remote Terraform state
+- Microsoft Entra identity integration
+- GitHub Actions OIDC
+- Azure RBAC
+- Azure Monitor Agent
+- Data Collection Rule
+- Log Analytics Workspace
+- CPU metrics
+- Memory metrics
+- Disk metrics
+
+```mermaid
+flowchart TB
+
+    VNET["Azure VNet<br/>10.30.0.0/16"]
+
+    WEB["Web Subnet"]
+    APP["Application Subnet"]
+    MGMT["Management Subnet"]
+
+    NSG["Network Security Groups"]
+    PIP["Static Public IP"]
+    NIC["Network Interface"]
+    VM["Ubuntu 24.04 LTS VM"]
+    NGINX["Nginx"]
+
+    AMA["Azure Monitor Agent"]
+    DCR["Data Collection Rule"]
+    LAW["Log Analytics Workspace"]
+
+    VNET --> WEB
+    VNET --> APP
+    VNET --> MGMT
+
+    WEB --> NSG
+    NSG --> NIC
+    PIP --> NIC
+    NIC --> VM
+    VM --> NGINX
+
+    VM --> AMA
+    AMA --> DCR
+    DCR --> LAW
 ```
 
-This provides an AWS-native management path for the EC2 instance without depending exclusively on direct SSH administration.
+---
 
-## Nginx Web Tier Validation
+# Infrastructure as Code Workflow
 
-Nginx was installed and configured on the Amazon Linux 2023 EC2 instance through AWS Systems Manager.
+Infrastructure changes followed a controlled lifecycle:
 
-The service was verified as:
+```mermaid
+flowchart LR
 
-```text
-active
-enabled
+    CODE["Terraform Code"]
+    FMT["terraform fmt"]
+    VALIDATE["terraform validate"]
+    PLAN["terraform plan"]
+    REVIEW["Review"]
+    APPLY["terraform apply"]
+    VERIFY["Cloud CLI Verification"]
+    CI["CI/CD Validation"]
+
+    CODE --> FMT
+    FMT --> VALIDATE
+    VALIDATE --> PLAN
+    PLAN --> REVIEW
+    REVIEW --> APPLY
+    APPLY --> VERIFY
+    VERIFY --> CI
 ```
 
-Local HTTP validation returned:
+This provided repeatable infrastructure deployment and independent validation.
 
-```text
-HTTP/1.1 200 OK
-Server: nginx
-```
+---
 
-The deployed web page identifies the workload as:
+# Identity and Access Management
 
-```text
-Multi-Cloud DevSecOps Platform
-AWS web tier - Terraform managed
-```
+## AWS Local Administration
 
-This validates the complete path from Terraform-managed compute provisioning through Systems Manager administration to application service availability.
-
-## Infrastructure as Code Workflow
-
-The infrastructure workflow follows:
-
-```text
-Terraform Code
-      |
-      v
-terraform fmt
-      |
-      v
-terraform validate
-      |
-      v
-terraform plan
-      |
-      v
-Manual Review
-      |
-      v
-terraform apply
-      |
-      v
-AWS Infrastructure
-      |
-      v
-AWS CLI / SSM Verification
-```
-
-This workflow ensures infrastructure changes are formatted, validated, reviewed, deployed, and independently verified.
-
-## Identity and Access Management
-
-### Local Administration
-
-Local AWS administration uses AWS IAM Identity Center.
+AWS local administration used IAM Identity Center and temporary credentials.
 
 ```text
 AWS IAM Identity Center
-          |
-          v
-   Federated User
-          |
-          v
-AdministratorAccess Permission Set
-          |
-          v
-Temporary Assumed-Role Credentials
-          |
-          v
-     AWS CLI / Terraform
+        |
+        v
+Federated User
+        |
+        v
+Permission Set
+        |
+        v
+Temporary Credentials
+        |
+        v
+AWS CLI / Terraform
 ```
 
-This avoids storing long-lived AWS access keys locally or in the project repository.
+This avoided permanent AWS access keys on the engineering workstation.
 
-### GitHub Actions OIDC Authentication
+---
 
-GitHub Actions authenticates to AWS using OpenID Connect federation.
+## AWS GitHub OIDC
 
 ```text
 GitHub Repository
@@ -240,663 +386,734 @@ GitHub Actions IAM Role
 Terraform / AWS APIs
 ```
 
-This eliminates the need to store permanent AWS access keys as GitHub secrets.
+The GitHub Actions role used controlled permissions required for Terraform state access and infrastructure refresh.
 
-The GitHub Actions role uses a dedicated least-privilege read policy for Terraform infrastructure refresh and planning.
+---
 
-The CI role has controlled read access to resources required by the deployed Terraform configuration, including:
+## Azure GitHub OIDC
 
-- VPCs and VPC attributes
-- Subnets
-- Route tables
-- Internet Gateways
-- Security groups
-- Security group rules
-- VPC endpoints
-- Prefix lists
-- Network interfaces
-- EC2 instances
-- EC2 instance types
-- EC2 instance attributes
-- EC2 tags
-- EBS volumes
-- EC2 credit specifications
-- IAM roles
-- IAM instance profiles
-- GitHub OIDC provider information
+The Azure CI/CD architecture used:
 
-This policy was iteratively validated against the live Terraform state until the CI pipeline could successfully refresh and plan the complete deployed AWS infrastructure.
+- GitHub Actions OIDC
+- Microsoft Entra application
+- Service principal
+- Federated identity credential
+- Resource-group scoped Azure Contributor RBAC
+- GitHub repository variables
+- Short-lived authentication
 
-## Remote Terraform State
+```text
+GitHub Actions
+      |
+      v
+GitHub OIDC
+      |
+      v
+Microsoft Entra ID
+      |
+      v
+Federated Identity Credential
+      |
+      v
+Azure RBAC
+      |
+      v
+Terraform / Azure APIs
+```
 
-Terraform state has been migrated from local storage to an Amazon S3 backend.
+---
 
-The backend provides:
+# Remote Terraform State
+
+## AWS
+
+AWS Terraform state was migrated from local storage to Amazon S3.
+
+The backend provided:
 
 - Centralized remote state
-- S3 encryption
+- S3 server-side encryption
 - Versioning
 - Public access blocking
-- Native Terraform state locking
-- CI/CD access through AWS OIDC
-- Separation of infrastructure state from the Git repository
+- Terraform state locking
+- GitHub Actions access through AWS OIDC
+- Separation between source code and Terraform state
 
-Local Terraform state files and provider working directories are excluded from source control.
+The backend bucket was intentionally retained after workload teardown to preserve the infrastructure lifecycle record and Terraform state history.
 
-## GitHub Actions DevSecOps Pipeline
+---
 
-The project includes an automated GitHub Actions CI pipeline for Terraform infrastructure validation.
+## Azure
 
-The current workflow is:
+Azure Terraform remote state used Azure Storage with:
 
-```text
-Git Push / Pull Request
-          |
-          v
-Checkout Repository
-          |
-          v
-Setup Terraform
-          |
-          v
-Configure AWS Credentials
-          |
-          v
-GitHub OIDC Authentication
-          |
-          v
-Verify AWS OIDC Identity
-          |
-          v
-Verify AWS Network Read Access
-          |
-          v
-Terraform Format Check
-          |
-          v
-Terraform Init
-          |
-          v
-Terraform Validate
-          |
-          v
-Terraform Plan
-          |
-          v
-Trivy IaC Security Scan
-          |
-          v
-CI Validation Passed
+- HTTPS-only access
+- TLS 1.2
+- Private Terraform state container
+- CI/CD integration
+- Separation between state and source code
+
+---
+
+# GitHub Actions DevSecOps Pipeline
+
+The repository includes automated Terraform validation workflows.
+
+```mermaid
+flowchart TD
+
+    PUSH["Git Push / Pull Request"]
+    CHECKOUT["Checkout Repository"]
+    SETUP["Setup Terraform"]
+    AUTH["OIDC Cloud Authentication"]
+    FMT["Terraform Format"]
+    INIT["Terraform Init"]
+    VALIDATE["Terraform Validate"]
+    PLAN["Terraform Plan"]
+    TRIVY["Trivy IaC Security Scan"]
+    PASS["CI Validation Passed"]
+
+    PUSH --> CHECKOUT
+    CHECKOUT --> SETUP
+    SETUP --> AUTH
+    AUTH --> FMT
+    FMT --> INIT
+    INIT --> VALIDATE
+    VALIDATE --> PLAN
+    PLAN --> TRIVY
+    TRIVY --> PASS
 ```
 
-The complete workflow has been successfully validated against the deployed AWS environment.
+---
 
-### Current CI Status
+# Security Practices
 
-```text
-AWS OIDC Authentication          PASSED
-AWS OIDC Identity Verification   PASSED
-AWS Network Read Access          PASSED
-Terraform Format Check           PASSED
-Terraform Init                   PASSED
-Terraform Validate               PASSED
-Terraform Plan                   PASSED
-Trivy IaC Security Scan          PASSED
-GitHub Actions Workflow          PASSED
-```
+The project implemented:
 
-## Security Practices
-
-The project currently implements:
-
-- AWS IAM Identity Center authentication
-- Temporary assumed-role credentials
+- AWS IAM Identity Center
+- Temporary AWS credentials
 - GitHub OIDC federation
+- Azure OIDC federation
+- Microsoft Entra federated identity
+- Azure RBAC
 - No long-lived AWS access keys in GitHub
-- Least-privilege AWS IAM permissions for CI
+- Least-privilege AWS CI permissions
 - Terraform state excluded from Git
-- Sensitive `.tfvars` files excluded from Git
-- Encrypted and versioned remote Terraform state
-- S3 public access blocking
-- Native Terraform state locking
+- Sensitive `.tfvars` excluded from Git
+- Encrypted remote state
+- Versioned AWS Terraform state
+- S3 public-access blocking
+- Terraform state locking
 - Private subnet isolation
-- Controlled public routing through an Internet Gateway
+- Network segmentation
 - Dedicated security groups
-- Controlled ingress and egress rules
+- Azure Network Security Groups
+- Restricted SSH administration
 - VPC endpoint-based AWS service connectivity
 - Encrypted EC2 EBS storage
 - IMDSv2 enforcement
-- AWS Systems Manager integration
-- Infrastructure tagging for governance and ownership
-- Terraform plan review before deployment
-- Independent AWS API verification after deployment
-- Automated Terraform validation through GitHub Actions
-- Trivy Infrastructure-as-Code security scanning
-- CI failure on HIGH/CRITICAL security findings
-- Automatic public IPv4 assignment disabled at the subnet level
-- Git-based infrastructure change management
+- AWS Systems Manager
+- Customer-managed KMS encryption
+- Terraform tagging
+- Terraform plan review
+- Independent cloud API validation
+- GitHub Actions CI
+- Trivy IaC scanning
+- HIGH/CRITICAL security quality gates
+- State-aware Terraform refactoring
+- Infrastructure drift validation
 
-The platform now integrates automated IaC security scanning, GitHub OIDC federation, least-privilege CI access, remote Terraform state, and automated infrastructure validation.
+---
 
-Future phases will extend these controls across Microsoft Azure and introduce additional policy, monitoring, reusable modules, and multi-cloud governance capabilities.
+# Reusable Terraform Architecture
 
-## Terraform Outputs
+Reusable modules were introduced for both cloud providers.
 
-The AWS configuration currently exposes:
+```text
+modules/
+├── aws/
+│   ├── monitoring/
+│   ├── network/
+│   └── security/
+│
+└── azure/
+    ├── compute/
+    ├── monitoring/
+    ├── network/
+    └── security/
+```
 
-- AWS region
-- VPC ID
-- Public subnet ID
-- Private application subnet ID
-- Management subnet ID
+The modular architecture separates concerns and allows infrastructure components to exchange resource IDs through explicit Terraform inputs and outputs.
 
-These outputs allow infrastructure information to be consumed by future modules and automation without hard-coding generated AWS resource IDs.
+---
 
-## Repository Structure
+# Repository Structure
 
 ```text
 multi-cloud-devsecops-platform/
-|
-+-- .github/
-|   +-- workflows/
-|       +-- terraform-ci.yml
-|
-+-- docs/
-|
-+-- modules/
-|   +-- aws/
-|   +-- azure/
-|
-+-- scripts/
-|
-+-- terraform/
-|   +-- aws/
-|   |   +-- backend.tf
-|   |   +-- compute-iam.tf
-|   |   +-- compute.tf
-|   |   +-- main.tf
-|   |   +-- oidc.tf
-|   |   +-- outputs.tf
-|   |   +-- providers.tf
-|   |   +-- security-groups.tf
-|   |   +-- variables.tf
-|   |   +-- versions.tf
-|   |   +-- vpc-endpoints.tf
-|   |   +-- .terraform.lock.hcl
-|   |
-|   +-- azure/
-|
-+-- bootstrap/
-|
-+-- .gitignore
-+-- README.md
+│
+├── .github/
+│   └── workflows/
+│       ├── azure-terraform-ci.yml
+│       └── terraform-ci.yml
+│
+├── docs/
+│
+├── modules/
+│   ├── aws/
+│   │   ├── monitoring/
+│   │   ├── network/
+│   │   └── security/
+│   │
+│   └── azure/
+│       ├── compute/
+│       ├── monitoring/
+│       ├── network/
+│       └── security/
+│
+├── scripts/
+│
+├── terraform/
+│   ├── aws/
+│   │   ├── backend.tf
+│   │   ├── compute-iam.tf
+│   │   ├── compute.tf
+│   │   ├── main.tf
+│   │   ├── oidc.tf
+│   │   ├── outputs.tf
+│   │   ├── providers.tf
+│   │   ├── security-groups.tf
+│   │   ├── variables.tf
+│   │   ├── versions.tf
+│   │   └── vpc-endpoints.tf
+│   │
+│   ├── azure/
+│   │   ├── main.tf
+│   │   ├── outputs.tf
+│   │   ├── providers.tf
+│   │   ├── security-groups.tf
+│   │   ├── variables.tf
+│   │   └── versions.tf
+│   │
+│   └── bootstrap/
+│
+├── .gitignore
+└── README.md
 ```
 
-Local Terraform state and provider working directories are intentionally excluded from source control.
+Local Terraform state, provider working directories, plans, and sensitive configuration are intentionally excluded from source control.
 
-## Technology Stack
+---
+
+# Technology Stack
+
+## Infrastructure as Code
 
 - Terraform
-- Amazon Web Services (AWS)
-- Microsoft Azure
-- Amazon EC2
+- Terraform modules
+- Terraform remote state
+- Terraform moved blocks
+
+## AWS
+
 - Amazon VPC
+- Amazon EC2
 - Amazon EBS
 - Amazon S3
 - AWS IAM
-- AWS IAM Identity Center
-- AWS Systems Manager
+- IAM Identity Center
 - AWS STS
+- AWS Systems Manager
 - AWS VPC Endpoints
+- Amazon CloudWatch
+- CloudWatch Logs
+- Amazon SNS
+- AWS KMS
+
+## Microsoft Azure
+
+- Azure Virtual Network
+- Azure Subnets
+- Network Security Groups
+- Azure Linux Virtual Machines
+- Azure Managed Identity
+- Azure Storage
+- Microsoft Entra ID
+- Azure RBAC
+- Azure Monitor Agent
+- Azure Monitor
+- Data Collection Rules
+- Log Analytics Workspace
+
+## DevOps / DevSecOps
+
 - Git
 - GitHub
 - GitHub Actions
 - GitHub OIDC
 - Trivy
-- Nginx
 - AWS CLI
 - Azure CLI
+- Bash
 - Visual Studio Code
-- DevSecOps tooling
 
-## Project Roadmap
+## Workloads
 
-- [x] Local cloud engineering workstation configuration
-- [x] Terraform installation and configuration
-- [x] AWS CLI configuration
-- [x] Azure CLI configuration
-- [x] GitHub CLI authentication
-- [x] AWS IAM Identity Center authentication
-- [x] Temporary AWS assumed-role authentication
-- [x] AWS Terraform provider configuration
-- [x] AWS VPC architecture
-- [x] Public subnet
-- [x] Private application subnet
-- [x] Management subnet
-- [x] AWS Internet Gateway
-- [x] Public route table and Internet routing
-- [x] Terraform outputs
-- [x] Terraform format and validation workflow
-- [x] Terraform plan review
-- [x] AWS infrastructure deployment
-- [x] Independent AWS infrastructure verification
-- [x] Git repository initialization
-- [x] GitHub repository creation
-- [x] GitHub Actions Terraform CI pipeline
-- [x] Infrastructure security scanning with Trivy
-- [x] Automated HIGH/CRITICAL IaC security quality gate
-- [x] Security finding remediation and CI verification
-- [x] GitHub OIDC authentication to AWS
-- [x] AWS security groups
-- [x] AWS compute layer
-- [x] EC2 IAM role and instance profile
-- [x] AWS Systems Manager integration
-- [x] S3 Gateway VPC Endpoint
-- [x] SSM Interface VPC Endpoint
-- [x] SSM Messages Interface VPC Endpoint
-- [x] Encrypted EC2 EBS storage
-- [x] IMDSv2 enforcement
-- [x] Nginx web-tier deployment
-- [x] Remote Terraform state
-- [x] Least-privilege AWS IAM for CI
-- [x] Encrypted and versioned S3 Terraform backend
-- [x] Native S3 state locking
-- [x] Automated Terraform plan in GitHub Actions
-- [x] GitHub Actions live AWS infrastructure refresh
-- [x] End-to-end Terraform CI validation
-- [x] Successful Trivy security validation
-- [x] Azure Terraform infrastructure
-- [x] Azure identity and networking
-- [x] Reusable Terraform modules
-- [x] Monitoring and logging
-- [ ] Multi-cloud architecture documentation
+- Linux
+- Amazon Linux 2023
+- Ubuntu 24.04 LTS
+- Nginx
 
-## Current Status
+---
 
-### Phase 1 - AWS Networking Foundation: Complete
+# Project Roadmap
 
-The AWS networking foundation has been:
+| Phase | Engineering Milestone | Status |
+| --- | --- | --- |
+| 1 | AWS Networking Foundation | Complete |
+| 2 | Terraform CI and IaC Security | Complete |
+| 3 | GitHub OIDC and Secure AWS CI/CD | Complete |
+| 4 | AWS Compute, Systems Management and Private Connectivity | Complete |
+| 5 | Azure Compute and Secure Workload Deployment | Complete |
+| 6 | Azure CI/CD, Identity and Multi-Cloud Integration | Complete |
+| 7 | Reusable AWS Terraform Modules | Complete |
+| 8 | AWS Security Hardening and CI Validation | Complete |
+| 9 | AWS Monitoring, Logging and Observability | Complete |
+| 10 | Azure Terraform Modularization and Architecture Refactoring | Complete |
+| 11 | Azure Monitoring, Logging and Observability | Complete |
+| Closure | Validation, Documentation and Controlled AWS Teardown | Complete |
 
-**Designed -> Defined as Code -> Validated -> Planned -> Reviewed -> Deployed -> Verified -> Version Controlled**
+---
 
-The deployed environment establishes the networking foundation for the multi-cloud platform, including subnet segmentation, Internet connectivity, routing, and Terraform-managed infrastructure configuration.
+# Phase 1 — AWS Networking Foundation
 
-### Phase 2 - Terraform CI and IaC Security: Complete
+**Status: Complete**
 
-GitHub Actions automatically validates Terraform infrastructure changes and performs Trivy Infrastructure-as-Code security scanning.
+The first phase established the AWS networking foundation.
 
-During implementation, the security pipeline identified automatic public IPv4 assignment on the AWS public subnet as a security misconfiguration.
+Implemented:
 
-The Terraform configuration was remediated, the change was reviewed through `terraform plan`, deployed in-place to AWS, independently verified through the AWS CLI, and successfully revalidated by the CI security pipeline.
+- AWS VPC
+- Public subnet
+- Private application subnet
+- Management subnet
+- Internet Gateway
+- Public route table
+- Internet routing
+- Route-table association
+- Terraform outputs
+- Terraform tagging
 
-The security pipeline performs:
+The lifecycle was:
+
+```text
+Design
+  ->
+Define as Code
+  ->
+Validate
+  ->
+Plan
+  ->
+Review
+  ->
+Deploy
+  ->
+Verify
+  ->
+Version Control
+```
+
+This established the initial infrastructure foundation for the multi-cloud platform.
+
+---
+
+# Phase 2 — Terraform CI and IaC Security
+
+**Status: Complete**
+
+GitHub Actions was introduced to automatically validate Terraform infrastructure changes.
+
+The pipeline included:
 
 - Terraform formatting verification
 - Terraform initialization
-- Terraform configuration validation
-- Trivy Infrastructure-as-Code security scanning
-- CI failure on HIGH/CRITICAL security findings
-- Automated security validation on pushes and pull requests
+- Terraform validation
+- Terraform planning
+- Trivy IaC scanning
+- HIGH/CRITICAL security quality gate
+- Push and pull-request validation
 
-**Security remediation lifecycle:**
+During implementation, automated security scanning identified automatic public IPv4 assignment as a security concern.
 
-`Detect -> Analyze -> Remediate -> Plan -> Deploy -> Verify -> Re-scan -> Pass`
+The Terraform configuration was remediated and independently revalidated.
 
-### Phase 3 - GitHub OIDC and Secure AWS CI/CD Integration: Complete
+```text
+Detect
+  ->
+Analyze
+  ->
+Remediate
+  ->
+Plan
+  ->
+Deploy
+  ->
+Verify
+  ->
+Re-scan
+  ->
+Pass
+```
 
-GitHub Actions authenticates to AWS through OpenID Connect federation using short-lived AWS credentials, eliminating the need for long-lived AWS access keys in GitHub.
+---
 
-Terraform state has been migrated from local storage to a private Amazon S3 backend with encryption, versioning, public access blocking, and native state locking.
+# Phase 3 — GitHub OIDC and Secure AWS CI/CD Integration
 
-The GitHub Actions pipeline performs:
+**Status: Complete**
 
-- AWS OIDC authentication
+GitHub Actions authentication was migrated to OpenID Connect federation.
+
+This removed the requirement for long-lived AWS credentials in GitHub.
+
+Implemented:
+
+- GitHub OIDC provider
+- AWS STS federation
+- GitHub Actions IAM role
+- Least-privilege CI access
 - AWS identity verification
-- Terraform formatting verification
-- S3 remote backend initialization
-- Terraform configuration validation
-- Live AWS infrastructure refresh
-- Automated Terraform plan
-- Trivy Infrastructure-as-Code security scanning
+- S3 remote Terraform backend
+- Terraform state encryption
+- Terraform state versioning
+- Terraform state locking
+- Public access blocking
 
-The GitHub Actions IAM role follows least-privilege principles and contains the AWS read and Terraform state permissions required by the CI pipeline.
+Secure workflow:
 
-**Secure CI/CD workflow:**
+```text
+Push / Pull Request
+        ->
+GitHub OIDC
+        ->
+AWS STS
+        ->
+CI IAM Role
+        ->
+S3 Remote State
+        ->
+Terraform Validate
+        ->
+Terraform Plan
+        ->
+Trivy
+        ->
+Pass
+```
 
-`Push/PR -> GitHub OIDC -> AWS STS -> S3 Remote State -> Terraform Validate -> Terraform Plan -> Trivy Security Scan -> Pass`
+---
 
-### Phase 4 - AWS Compute, Systems Management and Private Service Connectivity: Complete
+# Phase 4 — AWS Compute, Systems Management and Private Service Connectivity
 
-The AWS environment has been extended beyond the networking foundation with a Terraform-managed compute layer and secure AWS service connectivity.
+**Status: Complete**
 
-The implementation includes:
+The AWS platform was extended beyond networking into compute and workload management.
 
-- Amazon EC2 web-tier instance running Amazon Linux 2023 ARM64
-- `t4g.micro` compute architecture
-- Encrypted GP3 EBS storage
-- IMDSv2 enforcement
-- Dedicated EC2 IAM role and instance profile
-- AWS Systems Manager integration
-- Amazon S3 Gateway VPC Endpoint
+Implemented:
+
+- Amazon Linux 2023 ARM64
+- `t4g.micro`
+- Encrypted GP3 storage
+- IMDSv2
+- EC2 IAM role
+- Instance profile
+- AWS Systems Manager
+- S3 Gateway VPC Endpoint
 - SSM Interface VPC Endpoint
 - SSM Messages Interface VPC Endpoint
-- Dedicated VPC endpoint security controls
-- Nginx installation and service configuration
-- HTTP service validation
-- Terraform-managed compute and IAM resources
+- Endpoint security controls
+- Nginx installation
+- HTTP workload validation
 
-AWS Systems Manager connectivity was successfully validated against the EC2 instance.
-
-The Nginx web service was successfully installed, enabled, started, and validated with an HTTP `200 OK` response.
-
-During CI integration, Terraform required additional read permissions to refresh the deployed AWS resources. The GitHub Actions IAM policy was incrementally extended using least-privilege permissions for the specific AWS APIs required by Terraform.
-
-The resulting GitHub Actions workflow successfully completed the full infrastructure validation pipeline.
-
-### Phase 4 Final Validation
+Nginx returned:
 
 ```text
-Set up job                        PASSED
-Checkout repository               PASSED
-Setup Terraform                   PASSED
-Configure AWS credentials         PASSED
-Verify AWS OIDC identity          PASSED
-Verify AWS network read access    PASSED
-Terraform Format Check            PASSED
-Terraform Init                    PASSED
-Terraform Validate                PASSED
-Terraform Plan                    PASSED
-Trivy IaC Security Scan           PASSED
-Complete job                      PASSED
+HTTP/1.1 200 OK
+Server: nginx
 ```
 
-**AWS CI/CD milestone status: COMPLETE**
+Systems Manager connectivity was independently verified.
 
-The AWS infrastructure, Terraform configuration, remote state, IAM policies, and GitHub Actions pipeline are synchronized and successfully validated.
+The complete AWS CI pipeline subsequently passed.
 
+---
 
-### Phase 5 – Azure Compute and Secure Workload Deployment: Complete
+# Phase 5 — Azure Compute and Secure Workload Deployment
 
-The Azure compute layer has been successfully implemented using Terraform Infrastructure as Code.
+**Status: Complete**
 
-The deployment includes:
+Azure was introduced as the project's second cloud environment.
 
-- Azure Linux virtual machine deployment
-- Secure SSH key-based authentication
-- Restricted administrative SSH access through Azure Network Security Groups
-- Managed System Assigned Identity
-- Static Azure Public IP assignment
-- Azure Network Interface configuration
-- Ubuntu 24.04 LTS operating system deployment
-- Automated Nginx web server installation and validation
+Implemented:
 
-The Azure workload was validated through multiple independent checks:
+- Azure VNet
+- Network segmentation
+- Linux VM
+- Ubuntu 24.04 LTS
+- Static Standard Public IP
+- Network Interface
+- Network Security Groups
+- Restricted administrative SSH
+- ED25519 authentication
+- Managed Identity
+- Nginx
+- Terraform deployment
 
-- Terraform plan verification
-- Terraform apply deployment
-- Azure CLI resource verification
-- SSH authentication using ED25519 keys
+Validation included:
+
+- Terraform plan
+- Terraform apply
+- Azure CLI
+- SSH authentication
 - Linux system validation
-- Nginx service validation
-- Local HTTP health check returning HTTP 200
+- Nginx validation
+- HTTP 200 health check
 
-The completed Azure workflow:
-
-`Terraform Code -> Azure VNet -> NSG Security Controls -> Linux VM -> SSH Key Authentication -> Nginx Deployment -> Application Verification`
-
-The Azure compute architecture now demonstrates secure cloud workload provisioning following Infrastructure as Code and DevSecOps principles.
-
-## Current Status
-
-### Phase 6 – Azure CI/CD, Identity and Multi-Cloud Integration: Complete
-
-The Azure environment has been integrated into the project's CI/CD and Infrastructure-as-Code workflow using GitHub Actions, Azure OpenID Connect federation, Azure RBAC, and remote Terraform state.
-
-The implementation includes:
-
-- GitHub Actions authentication to Azure using OIDC
-- Microsoft Entra application and service principal integration
-- Federated identity credential for the GitHub main branch
-- Resource-group scoped Azure Contributor RBAC for CI/CD
-- Azure Terraform remote state using Azure Storage
-- HTTPS-only storage access with TLS 1.2
-- Private `tfstate` container for Terraform state
-- GitHub repository variables for Azure configuration
-- Secure injection of the Azure SSH public key into Terraform CI
-- Automated Azure Terraform initialization and validation
-- Automated Terraform plan against live Azure infrastructure
-- Azure CLI infrastructure verification
-
-The Azure CI/CD workflow was independently validated through GitHub Actions with a successful end-to-end run.
-
-### Azure CI/CD Validation
+Workflow:
 
 ```text
-Set up job                        PASSED
-Checkout repository               PASSED
-Setup Terraform                   PASSED
-Azure Login with OIDC             PASSED
-Terraform Init                    PASSED
-Terraform Format Check            PASSED
-Terraform Validate                PASSED
-Terraform Plan                    PASSED
-Azure CLI Verification            PASSED
-Complete job                      PASSED
+Terraform
+   ->
+Azure VNet
+   ->
+NSG Security
+   ->
+Linux VM
+   ->
+SSH Authentication
+   ->
+Nginx
+   ->
+Application Validation
 ```
 
+---
 
-## Phase 7 — Reusable AWS Terraform Modules
+# Phase 6 — Azure CI/CD, Identity and Multi-Cloud Integration
 
-### Status: Complete
+**Status: Complete**
 
-Phase 7 refactored the existing AWS infrastructure into reusable Terraform modules while preserving the deployed infrastructure and Terraform state.
+Azure was integrated into the CI/CD architecture.
 
-### AWS Network Module
+Implemented:
 
-The AWS networking layer was migrated into:
+- GitHub Actions Azure workflow
+- Azure OIDC authentication
+- Microsoft Entra application
+- Service principal
+- Federated identity credential
+- Resource-group scoped Contributor RBAC
+- Azure remote Terraform state
+- Secure Terraform state container
+- TLS 1.2
+- GitHub repository variables
+- Terraform initialization
+- Terraform validation
+- Terraform planning
+- Azure CLI verification
 
-`modules/aws/network/`
+Final CI validation:
 
-The reusable network module manages:
+```text
+Checkout Repository          PASSED
+Setup Terraform              PASSED
+Azure Login with OIDC        PASSED
+Terraform Init               PASSED
+Terraform Format Check       PASSED
+Terraform Validate           PASSED
+Terraform Plan               PASSED
+Azure CLI Verification       PASSED
+Complete Job                 PASSED
+```
+
+---
+
+# Phase 7 — Reusable AWS Terraform Modules
+
+**Status: Complete**
+
+AWS infrastructure was refactored into reusable modules while preserving existing resources.
+
+## Network Module
+
+```text
+modules/aws/network/
+```
+
+Managed:
 
 - VPC
 - Public subnet
 - Private application subnet
 - Management subnet
 - Internet Gateway
-- Public route table
+- Route table
 - Internet route
-- Public subnet route-table association
+- Route-table association
 
-Terraform `moved` blocks were used to migrate existing resources into the module without destroying or recreating the live infrastructure.
+## Security Module
 
-### AWS Security Module
+```text
+modules/aws/security/
+```
 
-The AWS security layer was migrated into:
-
-`modules/aws/security/`
-
-The reusable security module manages:
+Managed:
 
 - Web security group
 - Application security group
-- VPC interface endpoint security group
-- HTTP and HTTPS ingress rules
-- Web-to-application traffic rules
+- Endpoint security group
+- HTTP/HTTPS ingress
+- Web-to-application traffic
 - S3 endpoint access
-- Security-group egress rules
+- Security-group egress
 
-Existing security resources were migrated into the module using Terraform state-aware refactoring.
+Terraform `moved` blocks preserved existing infrastructure during the refactor.
 
-### Phase 7 Validation
-
-The refactor was validated against the existing AWS environment.
+Validation:
 
 ```text
-Terraform validation: PASSED
-Network module migration: PASSED
-Security module migration: PASSED
-Infrastructure recreation: NONE
-Final Terraform plan: NO CHANGES
-Resources added: 0
-Resources destroyed: 0
+Terraform validation          PASSED
+Network module migration      PASSED
+Security module migration     PASSED
+Infrastructure recreation     NONE
+Final Terraform plan          NO CHANGES
+Resources added               0
+Resources destroyed           0
 ```
 
-## Phase 8 - AWS Security Hardening and CI Validation
+---
 
-### Status: Complete
+# Phase 8 — AWS Security Hardening and CI Validation
 
-Phase 8 hardened the AWS security layer after automated IaC security scanning identified unrestricted security-group egress.
+**Status: Complete**
 
-The security configuration was updated to restrict internal outbound traffic to the AWS VPC CIDR:
+Automated IaC scanning identified unrestricted security-group egress.
 
-`10.20.0.0/16`
+Security rules were hardened to restrict internal outbound traffic to:
 
-The AWS security architecture now includes:
+```text
+10.20.0.0/16
+```
+
+The security architecture included:
 
 - Public web security group
 - Private application security group
-- Dedicated VPC interface endpoint security group
-- HTTP and HTTPS ingress controls
-- Web-to-application traffic restriction
-- S3 endpoint access through the AWS-managed prefix list
-- VPC-scoped egress controls
+- VPC endpoint security group
+- HTTP/HTTPS ingress controls
+- Web-to-application restrictions
+- S3 prefix-list access
+- VPC-scoped egress
 - Dedicated Terraform security-group rule resources
-- Terraform-managed state reconciliation
 
-### Security Remediation
+An existing AWS security-group rule was reconciled with Terraform state to prevent duplicate creation.
 
-The security remediation lifecycle was completed:
-
-`Detect -> Analyze -> Remediate -> Plan -> Reconcile -> Apply -> Verify -> Re-scan -> Pass`
-
-During remediation, an existing AWS VPC security-group egress rule was imported into Terraform state to prevent duplicate-rule creation and preserve the live AWS configuration.
-
-### Phase 8 Terraform Validation
+Remediation lifecycle:
 
 ```text
-Terraform validation: PASSED
-Terraform plan: NO CHANGES
-Terraform apply: PASSED
-Resources added: 0
-Resources changed: 1
-Resources destroyed: 0
-Final Terraform plan: NO CHANGES
+Detect
+  ->
+Analyze
+  ->
+Remediate
+  ->
+Plan
+  ->
+Reconcile
+  ->
+Apply
+  ->
+Verify
+  ->
+Re-scan
+  ->
+Pass
 ```
 
-## Phase 9 – AWS Monitoring, Logging and Observability
-
-### Status: Complete
-
-Phase 9 introduced a Terraform-managed monitoring, logging, alerting, and observability layer for the AWS web workload.
-
-The implementation extends the existing AWS infrastructure with centralized CloudWatch logging, infrastructure alarms, SNS notifications, private AWS service connectivity, customer-managed encryption, and automated CI/CD security validation.
-
-### Monitoring Architecture
-
-The monitoring layer includes:
-
-- Amazon CloudWatch Logs for centralized Nginx logging
-- CloudWatch Agent integration with the EC2 web tier
-- Nginx access and error log streams
-- CloudWatch high-CPU alarm
-- EC2 instance-status-check alarm
-- Amazon SNS alert topic
-- Customer-managed AWS KMS encryption for SNS
-- Automatic KMS key rotation
-- Terraform-managed KMS alias
-- CloudWatch Logs Interface VPC Endpoint
-- Private DNS for the CloudWatch Logs endpoint
-- Terraform-managed monitoring module
-- GitHub Actions CI validation
-- Trivy Infrastructure-as-Code security scanning
-
-The monitoring infrastructure is managed through:
-
-`modules/aws/monitoring/`
-
-### Centralized Nginx Logging
-
-The Amazon CloudWatch Agent collects application logs from the EC2 web tier.
-
-The monitored files include:
+Final validation:
 
 ```text
-/var/log/nginx/access.log
-/var/log/nginx/error.log
+Terraform validation     PASSED
+Terraform apply          PASSED
+Final Terraform plan     NO CHANGES
 ```
 
-CloudWatch log streams were successfully created for both Nginx access and error events, providing centralized visibility into web requests and application errors.
+---
 
-The logging architecture uses private AWS service connectivity through a CloudWatch Logs Interface VPC Endpoint with Private DNS enabled.
+# Phase 9 — AWS Monitoring, Logging and Observability
 
-### CloudWatch Monitoring and Alerting
+**Status: Complete**
 
-Terraform manages CloudWatch alarms for the deployed EC2 workload.
+Phase 9 introduced centralized monitoring and observability for the AWS workload.
 
-The monitoring configuration includes:
-
-```text
-EC2 Web Instance
-       |
-       +--> CloudWatch Agent
-       |        |
-       |        +--> Nginx Access Logs
-       |        +--> Nginx Error Logs
-       |
-       +--> CloudWatch Metrics
-                |
-                +--> High CPU Alarm
-                +--> Instance Status Check Alarm
-                         |
-                         v
-                     SNS Alerts
-                         |
-                         v
-                  KMS Encryption
-```
-
-This provides both log-based operational visibility and metric-based infrastructure monitoring.
-
-### SNS and KMS Security
-
-The SNS alert topic is encrypted using a dedicated customer-managed AWS KMS key rather than the default AWS-managed SNS key.
-
-The KMS implementation includes:
-
-- Customer-managed symmetric KMS key
-- Automatic key rotation
-- Terraform-managed KMS alias
-- Terraform resource tagging
-- SNS server-side encryption
-
-The implementation was introduced after Trivy IaC scanning identified the original SNS encryption configuration as insufficient for the project's security policy.
-
-The remediation lifecycle was:
-
-`Detect -> Analyze -> Remediate -> Plan -> Apply -> Verify -> Re-scan -> Pass`
-
-### CI/CD Least-Privilege IAM
-
-The GitHub Actions OIDC role was incrementally extended with the read-only permissions Terraform required to refresh the monitoring infrastructure.
-
-These included read operations for:
+Implemented:
 
 - CloudWatch Logs
-- CloudWatch alarms
-- SNS topics and resource tags
-- IAM roles and policies
-- KMS keys
-- KMS key policies
-- KMS rotation status
-- KMS resource tags
-- KMS aliases
+- CloudWatch Agent
+- Nginx access logging
+- Nginx error logging
+- High CPU alarm
+- EC2 status-check alarm
+- SNS alerting
+- Customer-managed KMS encryption
+- KMS automatic rotation
+- Terraform-managed KMS alias
+- CloudWatch Logs VPC Endpoint
+- Private DNS
+- Terraform monitoring module
+- GitHub Actions validation
+- Trivy security scanning
 
-This preserved the project's least-privilege approach while allowing Terraform CI to inspect the live AWS environment.
+Monitoring module:
 
-### Phase 9 Validation
+```text
+modules/aws/monitoring/
+```
 
-The final GitHub Actions Terraform CI pipeline completed successfully.
+Architecture:
+
+```mermaid
+flowchart TD
+
+    EC2["EC2 Web Tier"]
+
+    AGENT["CloudWatch Agent"]
+    LOGS["CloudWatch Logs"]
+    ACCESS["Nginx Access Logs"]
+    ERROR["Nginx Error Logs"]
+
+    METRICS["CloudWatch Metrics"]
+    CPU["High CPU Alarm"]
+    STATUS["Instance Status Alarm"]
+    SNS["SNS Alert Topic"]
+    KMS["Customer Managed KMS"]
+
+    EC2 --> AGENT
+    AGENT --> LOGS
+    LOGS --> ACCESS
+    LOGS --> ERROR
+
+    EC2 --> METRICS
+    METRICS --> CPU
+    METRICS --> STATUS
+    CPU --> SNS
+    STATUS --> SNS
+    SNS --> KMS
+```
+
+The SNS topic was protected by a dedicated customer-managed KMS key.
+
+The final CI validation passed:
 
 ```text
 AWS OIDC Authentication        PASSED
@@ -909,182 +1126,932 @@ Trivy IaC Security Scan        PASSED
 Terraform Validation Workflow  PASSED
 ```
 
-The final local Terraform verification also returned:
+Final Terraform verification:
 
 ```text
 No changes. Your infrastructure matches the configuration.
 ```
 
-### Phase 9 Result
+---
 
-Phase 9 completed the AWS observability foundation with centralized logging, infrastructure monitoring, encrypted alerting, private CloudWatch connectivity, automated security scanning, and GitHub Actions validation.
+# Phase 10 — Azure Terraform Modularization and Architecture Refactoring
 
-**Phase 9 milestone status: COMPLETE**
+**Status: Complete**
 
-## Phase 10 - Azure Terraform Modularization and Architecture Refactoring
-
-Phase 10 refactored the existing Azure Terraform infrastructure into reusable modules while preserving the deployed infrastructure and Terraform state.
-
-The objective of this phase was to improve maintainability, reusability, separation of concerns, and long-term scalability without destroying or recreating existing Azure resources.
-
-### Azure Modular Architecture
-
-The Azure infrastructure is now organized into three reusable Terraform modules:
+Azure infrastructure was refactored from a root-module implementation into reusable Terraform modules.
 
 ```text
 modules/azure/
+
 ├── network/
 │   ├── main.tf
 │   ├── variables.tf
 │   └── outputs.tf
+│
 ├── security/
 │   ├── main.tf
 │   ├── variables.tf
 │   └── outputs.tf
+│
 └── compute/
     ├── main.tf
     ├── variables.tf
     └── outputs.tf
 ```
 
-The modules separate Azure networking, security, and compute responsibilities while exposing outputs that allow the modules to integrate without hard-coded resource dependencies.
+## Network Module
 
-### Azure Network Module
-
-The network module manages:
+Managed:
 
 - Azure Virtual Network
 - Web subnet
 - Application subnet
 - Management subnet
-- Network outputs consumed by other modules
+- Network outputs
 
-Existing network resources were migrated from root-module Terraform addresses into `module.network` using Terraform `moved` blocks.
+## Security Module
 
-This preserved the existing Azure resources while changing their Terraform state addresses.
+Managed:
 
+- Web NSG
+- Application NSG
+- Management NSG
+- HTTPS rule
+- Restricted SSH rule
+- NSG/subnet associations
 
-### Azure Security Module
+## Compute Module
 
-The security module separates Azure network security controls from the networking layer and manages:
+Managed:
 
-- Web Network Security Group
-- Application Network Security Group
-- Management Network Security Group
-- HTTPS inbound security rule
-- Restricted administrative SSH rule
-- NSG-to-subnet associations
+- Static Standard Public IP
+- Network Interface
+- Linux VM
+- SSH authentication
+- Managed Identity
+- Ubuntu image
+- Nginx cloud-init
 
-The module consumes subnet IDs exposed by `module.network`, establishing a clear dependency between the networking and security layers.
+Terraform `moved` blocks migrated state addresses without destroying live resources.
 
-Existing NSGs, security rules, and subnet associations were migrated into `module.security` using Terraform `moved` blocks. The migration completed without recreating or destroying the deployed Azure security resources.
+```mermaid
+flowchart TD
 
-### Azure Compute Module
+    ROOT["Root Terraform Resources"]
 
-The compute module manages the Azure web workload, including:
+    NET["module.network"]
+    SEC["module.security"]
+    COMPUTE["module.compute"]
 
-- Static Standard public IP address
-- Azure network interface
-- Linux virtual machine
-- SSH key authentication
-- System-assigned managed identity
-- Ubuntu 24.04 LTS image configuration
-- Nginx installation and initialization through cloud-init
+    ROOT --> NET
+    ROOT --> SEC
+    ROOT --> COMPUTE
 
-The compute module consumes the web subnet ID from `module.network`, allowing compute resources to depend on networking through module outputs rather than direct root-module resource references.
+    NET --> VNET["Virtual Network"]
+    NET --> SUBNETS["Subnets"]
 
-Existing compute resources were migrated into `module.compute` using Terraform `moved` blocks while preserving the deployed VM, network interface, public IP address, and Terraform state.
+    SEC --> NSG["Network Security Groups"]
+    SEC --> RULES["Security Rules"]
 
-
-### State-Aware Terraform Refactoring
-
-A key requirement of Phase 10 was to modularize the existing Azure configuration without destroying or recreating live infrastructure.
-
-Terraform `moved` blocks were used to transition existing resource addresses from the root module into their corresponding reusable modules.
-
-The migration followed this pattern:
-
-```text
-Root Terraform Resources
-        |
-        +--> module.network
-        |      +--> Virtual Network
-        |      +--> Web Subnet
-        |      +--> Application Subnet
-        |      +--> Management Subnet
-        |
-        +--> module.security
-        |      +--> Network Security Groups
-        |      +--> Security Rules
-        |      +--> Subnet/NSG Associations
-        |
-        +--> module.compute
-               +--> Public IP
-               +--> Network Interface
-               +--> Linux Virtual Machine
+    COMPUTE --> IP["Public IP"]
+    COMPUTE --> NIC["Network Interface"]
+    COMPUTE --> VM["Linux VM"]
 ```
 
-Terraform recognized these operations as state-address migrations rather than infrastructure replacements.
-
-### Phase 10 Validation
-
-Each modularization stage was independently validated before proceeding to the next layer.
-
-The validation lifecycle was:
+Validation lifecycle:
 
 ```text
-Refactor -> Format -> Init -> Validate -> Plan -> Apply State Migration -> Re-Plan -> CI Validation
+Refactor
+  ->
+Format
+  ->
+Init
+  ->
+Validate
+  ->
+Plan
+  ->
+Apply State Migration
+  ->
+Re-Plan
+  ->
+CI Validation
 ```
 
-The final Terraform validation returned:
+Final result:
+
+```text
+Success! The configuration is valid.
+
+0 to add
+0 to change
+0 to destroy
+
+No changes. Your infrastructure matches the configuration.
+```
+
+---
+
+# Phase 11 — Azure Monitoring, Logging and Observability
+
+**Status: Complete**
+
+Phase 11 completed the Azure observability architecture and brought the Azure environment to functional parity with the monitoring principles implemented in AWS.
+
+A dedicated Terraform monitoring module was introduced:
+
+```text
+modules/azure/monitoring/
+├── main.tf
+├── variables.tf
+└── outputs.tf
+```
+
+The module implemented:
+
+- Log Analytics Workspace
+- Azure Monitor Agent
+- Data Collection Rule
+- Data Collection Rule association
+- Performance counter collection
+- Terraform tagging
+- Integration with the existing Azure Linux VM
+
+---
+
+## Azure Monitor Architecture
+
+```mermaid
+flowchart TD
+
+    VM["Ubuntu 24.04 LTS VM"]
+    AMA["Azure Monitor Agent"]
+    DCR["Data Collection Rule"]
+    LAW["Log Analytics Workspace"]
+    PERF["Perf Table"]
+
+    CPU["Processor Metrics"]
+    MEMORY["Memory Metrics"]
+    DISK["Disk Metrics"]
+
+    VM --> AMA
+    AMA --> DCR
+    DCR --> LAW
+    LAW --> PERF
+
+    PERF --> CPU
+    PERF --> MEMORY
+    PERF --> DISK
+```
+
+---
+
+## Data Collection Rule
+
+The Azure Data Collection Rule was configured to collect Linux performance counters every 60 seconds.
+
+The final counter configuration included:
+
+```text
+\Processor(*)\% Processor Time
+
+\Memory\% Available Memory
+
+\Logical Disk(*)\% Free Space
+```
+
+The monitoring configuration was associated with:
+
+```text
+vm-multicloud-dev-web
+```
+
+using a Terraform-managed Data Collection Rule association.
+
+---
+
+## Azure Monitor Agent
+
+The Azure Monitor Linux Agent was installed and managed through the Azure VM extension.
+
+The agent services were independently verified as active and running.
+
+The effective agent configuration contained the expected CPU, memory, and disk counters.
+
+---
+
+## Log Analytics Validation
+
+The final Log Analytics query successfully returned all three metric families.
+
+### CPU
+
+Observed processor instances included:
+
+```text
+cpu0
+cpu1
+total
+```
+
+Counter:
+
+```text
+% Processor Time
+```
+
+### Memory
+
+Counter:
+
+```text
+% Available Memory
+```
+
+The successful query returned values of approximately:
+
+```text
+78.5% - 78.6% available memory
+```
+
+during final validation.
+
+### Disk
+
+Counter:
+
+```text
+% Free Space
+```
+
+Disk instances included:
+
+```text
+/
+/boot
+/boot/efi
+/dev
+/dev/shm
+/run
+/run/lock
+total
+```
+
+This confirmed end-to-end collection from:
+
+```text
+Linux VM
+   ->
+Azure Monitor Agent
+   ->
+Data Collection Rule
+   ->
+Log Analytics Workspace
+   ->
+Perf Table
+   ->
+KQL Query
+```
+
+---
+
+## Phase 11 Troubleshooting and Engineering Validation
+
+During implementation, disk telemetry appeared first while CPU and memory metrics were initially absent from Log Analytics.
+
+Troubleshooting included:
+
+- Inspecting the Terraform DCR configuration
+- Inspecting the deployed Azure Data Collection Rule
+- Inspecting Azure Monitor Agent configuration
+- Verifying AMA package and extension versions
+- Inspecting generated counter definitions
+- Inspecting MDSD counter configuration
+- Reviewing Azure Monitor Agent logs
+- Comparing requested counters with effective Linux counters
+- Querying the `Perf` table directly
+- Updating Linux-compatible performance counter definitions
+- Applying the corrected Terraform configuration
+- Revalidating telemetry ingestion
+
+The final effective counters were:
+
+```text
+% Processor Time
+% Available Memory
+% Free Space
+```
+
+and all were successfully observed in Log Analytics.
+
+---
+
+## Phase 11 Terraform Validation
+
+Terraform validation returned:
 
 ```text
 Success! The configuration is valid.
 ```
 
-The final Terraform plan returned:
+The monitoring configuration was applied successfully.
+
+The final Terraform apply updated the Azure Data Collection Rule without recreating the surrounding infrastructure.
+
+Subsequent validation confirmed that the monitoring configuration was active and telemetry was being ingested.
+
+---
+
+## Phase 11 Result
+
+Phase 11 completed Azure monitoring and observability through Terraform-managed Azure Monitor infrastructure.
+
+The completed implementation demonstrated:
+
+- Azure Monitor Agent deployment
+- Data Collection Rules
+- Log Analytics integration
+- Linux performance counters
+- CPU monitoring
+- Memory monitoring
+- Disk monitoring
+- KQL-based telemetry validation
+- Terraform-managed observability
+- Troubleshooting of agent/counter behavior
+- End-to-end monitoring validation
+
+**Phase 11 milestone status: COMPLETE**
+
+---
+
+# Multi-Cloud Observability Architecture
+
+With Phases 9 and 11 complete, the project implemented monitoring on both cloud platforms.
+
+```mermaid
+flowchart LR
+
+    subgraph AWS["AWS Observability"]
+        AEC2["EC2"]
+        CWA["CloudWatch Agent"]
+        CWL["CloudWatch Logs"]
+        CWM["CloudWatch Metrics"]
+        ALARM["CloudWatch Alarms"]
+        SNS["SNS"]
+
+        AEC2 --> CWA
+        CWA --> CWL
+        AEC2 --> CWM
+        CWM --> ALARM
+        ALARM --> SNS
+    end
+
+    subgraph AZ["Azure Observability"]
+        AVM["Linux VM"]
+        AMA["Azure Monitor Agent"]
+        DCR["Data Collection Rule"]
+        LAW["Log Analytics"]
+        PERF["Perf / KQL"]
+
+        AVM --> AMA
+        AMA --> DCR
+        DCR --> LAW
+        LAW --> PERF
+    end
+```
+
+This demonstrates provider-native observability while maintaining the same engineering principle:
+
+```text
+Workload
+   ->
+Telemetry Agent
+   ->
+Cloud Monitoring Platform
+   ->
+Centralized Telemetry
+   ->
+Operational Validation
+```
+
+---
+
+# Infrastructure Lifecycle and Cost Management
+
+Building infrastructure was only one part of the project.
+
+The AWS environment was deliberately decommissioned after final validation to demonstrate controlled infrastructure lifecycle management and prevent unnecessary ongoing cloud charges.
+
+The process was performed through Terraform rather than manually deleting workload resources from the AWS Console.
+
+---
+
+## Pre-Destruction Validation
+
+Before destruction:
+
+```text
+Terraform AWS state count: 38
+```
+
+Terraform confirmed:
 
 ```text
 No changes. Your infrastructure matches the configuration.
 ```
 
-The completed migrations therefore resulted in:
+This established that Terraform state and the live AWS infrastructure were synchronized before teardown.
+
+---
+
+## Destruction Plan
+
+A dedicated Terraform destruction plan was generated and reviewed before execution.
 
 ```text
-0 to add
-0 to change
-0 to destroy
+Plan: 0 to add, 0 to change, 37 to destroy.
 ```
 
-Terraform state now tracks the Azure resources through `module.network`, `module.security`, and `module.compute` while the deployed Azure infrastructure remains unchanged.
+The plan was saved before execution.
 
-### CI/CD Verification
+This allowed the exact destructive operations to be reviewed before applying them.
 
-The Azure Terraform GitHub Actions workflow successfully validated each major Phase 10 refactoring milestone.
+---
 
-Successful CI runs were recorded for:
+## Controlled AWS Teardown
 
-- Azure network infrastructure modularization
-- Azure security infrastructure modularization
-- Azure compute infrastructure modularization
+Terraform successfully completed the workload teardown:
 
-This confirms that the modular architecture passes the automated Azure Terraform CI validation pipeline in addition to local Terraform validation.
+```text
+Apply complete! Resources: 0 added, 0 changed, 37 destroyed.
+```
 
+The teardown removed the project workload infrastructure including:
 
-### Phase 10 Result
+- EC2 instance
+- EBS workload volume
+- VPC workload resources
+- Subnets
+- Internet Gateway
+- Route tables
+- Security groups
+- Security-group rules
+- VPC endpoints
+- CloudWatch alarms
+- CloudWatch log group
+- SNS alerting resources
+- Project IAM resources
+- Monitoring infrastructure
 
-Phase 10 successfully transformed the Azure Terraform implementation from a root-module-oriented configuration into a reusable modular architecture while preserving the existing deployed infrastructure and Terraform state.
+---
 
-The completed Azure architecture now provides:
+## Post-Destruction Verification
 
-- Reusable network, security, and compute Terraform modules
-- Clear separation of infrastructure responsibilities
-- Module-to-module integration through explicit inputs and outputs
-- State-aware migration using Terraform `moved` blocks
-- Zero resource destruction or recreation during refactoring
-- Successful local Terraform validation and planning
-- Successful automated GitHub Actions Azure Terraform CI validation
+Independent AWS CLI verification was performed after Terraform completed.
 
-The Azure infrastructure remains synchronized with Terraform with no configuration drift detected after the modularization.
+The checks confirmed no remaining project workload resources for:
 
-**Phase 10 milestone status: COMPLETE**
+```text
+EC2 Instances
+EBS Volumes
+Elastic IPs
+NAT Gateways
+VPC Endpoints
+Load Balancers
+CloudWatch Alarms
+CloudWatch Log Groups
+SNS Topics
+Project IAM Roles
+GitHub Project OIDC Infrastructure
+```
+
+---
+
+## KMS Lifecycle
+
+Two KMS keys were observed after workload destruction.
+
+### AWS-managed EBS key
+
+```text
+alias/aws/ebs
+KeyManager: AWS
+```
+
+This is an AWS-managed service key and was intentionally left untouched.
+
+### Project customer-managed key
+
+The project KMS key used for encrypted SNS alerts entered:
+
+```text
+KeyManager: CUSTOMER
+KeyState: PendingDeletion
+Description: KMS key for Multi-Cloud DevSecOps SNS alerts
+```
+
+This confirmed that the project-specific customer-managed key entered the AWS KMS deletion lifecycle.
+
+---
+
+# Terraform Backend Retention
+
+The AWS Terraform backend was intentionally retained after workload teardown.
+
+Bucket:
+
+```text
+multi-cloud-devsecops-tfstate-<account-id>-euc1
+```
+
+State path:
+
+```text
+terraform/aws/terraform.tfstate
+```
+
+The backend remains:
+
+```text
+Versioning: Enabled
+Encryption: AES256 / SSE-S3
+```
+
+Retaining the backend preserves:
+
+- Terraform state history
+- Infrastructure lifecycle evidence
+- Previous state versions
+- Portfolio/redeployment reference
+- Recovery information
+
+The backend can be removed separately when long-term state retention is no longer required.
+
+---
+
+# Deployment and Destruction Lifecycle
+
+The project therefore demonstrates the complete infrastructure lifecycle:
+
+```mermaid
+flowchart LR
+
+    DESIGN["Design"]
+    CODE["Terraform Code"]
+    CI["CI / Security Scan"]
+    PLAN["Plan"]
+    DEPLOY["Deploy"]
+    VERIFY["Verify"]
+    MONITOR["Monitor"]
+    DOCUMENT["Document"]
+    DESTROYPLAN["Destroy Plan"]
+    DESTROY["Controlled Destroy"]
+    VERIFY2["Post-Destroy Verification"]
+
+    DESIGN --> CODE
+    CODE --> CI
+    CI --> PLAN
+    PLAN --> DEPLOY
+    DEPLOY --> VERIFY
+    VERIFY --> MONITOR
+    MONITOR --> DOCUMENT
+    DOCUMENT --> DESTROYPLAN
+    DESTROYPLAN --> DESTROY
+    DESTROY --> VERIFY2
+```
+
+This is a deliberate part of the project architecture rather than an accidental cleanup exercise.
+
+---
+
+# Validation Summary
+
+The project used multiple independent validation layers.
+
+## Terraform
+
+```text
+terraform fmt
+terraform init
+terraform validate
+terraform plan
+terraform apply
+terraform state
+terraform destroy
+```
+
+## AWS
+
+Validation used:
+
+- AWS CLI
+- AWS Systems Manager
+- Terraform state
+- CloudWatch
+- GitHub Actions
+- Trivy
+- Nginx HTTP validation
+
+## Azure
+
+Validation used:
+
+- Azure CLI
+- SSH
+- Linux commands
+- Terraform
+- GitHub Actions
+- Azure Monitor
+- Log Analytics
+- KQL
+- Nginx HTTP validation
+
+---
+
+# Security Remediation Model
+
+A recurring engineering pattern throughout the project was:
+
+```mermaid
+flowchart LR
+
+    DETECT["Detect"]
+    ANALYZE["Analyze"]
+    FIX["Remediate"]
+    PLAN["Terraform Plan"]
+    APPLY["Apply"]
+    VERIFY["Verify"]
+    SCAN["Re-scan"]
+    PASS["Pass"]
+
+    DETECT --> ANALYZE
+    ANALYZE --> FIX
+    FIX --> PLAN
+    PLAN --> APPLY
+    APPLY --> VERIFY
+    VERIFY --> SCAN
+    SCAN --> PASS
+```
+
+Examples included:
+
+- Public IPv4 configuration
+- Security-group egress
+- Terraform state reconciliation
+- SNS encryption
+- KMS access
+- GitHub Actions least-privilege permissions
+- Azure Monitor Linux performance counters
+
+---
+
+# Engineering Skills Demonstrated
+
+## Cloud Infrastructure
+
+- AWS infrastructure engineering
+- Azure infrastructure engineering
+- VPC/VNet design
+- Subnetting
+- Routing
+- Security groups
+- Network Security Groups
+- Compute provisioning
+- Linux administration
+- Cloud-native management services
+
+## Infrastructure as Code
+
+- Terraform
+- Terraform modules
+- Terraform state
+- Remote state
+- State migration
+- `moved` blocks
+- Imports/state reconciliation
+- Terraform lifecycle management
+- Infrastructure teardown
+
+## Identity
+
+- AWS IAM
+- IAM Identity Center
+- AWS STS
+- GitHub OIDC
+- Microsoft Entra ID
+- Azure OIDC
+- Azure RBAC
+- Managed Identity
+
+## DevOps
+
+- Git
+- GitHub
+- GitHub Actions
+- CI/CD
+- Infrastructure validation
+- Automated Terraform planning
+
+## DevSecOps
+
+- Trivy IaC scanning
+- Security quality gates
+- Least privilege
+- Security remediation
+- KMS encryption
+- Secure remote state
+- Federated credentials
+
+## Observability
+
+- CloudWatch
+- CloudWatch Agent
+- CloudWatch Logs
+- CloudWatch alarms
+- SNS
+- Azure Monitor
+- Azure Monitor Agent
+- Data Collection Rules
+- Log Analytics
+- KQL
+- Linux performance counters
+
+## Operational Engineering
+
+- Troubleshooting
+- Drift detection
+- Live infrastructure validation
+- Cloud CLI validation
+- State-aware refactoring
+- Controlled destruction
+- Cost-conscious infrastructure lifecycle management
+
+---
+
+# Key Engineering Outcomes
+
+The project progressed substantially beyond simply deploying cloud resources.
+
+It demonstrates the ability to:
+
+1. Design cloud networks.
+2. Represent infrastructure as Terraform code.
+3. Secure cloud workloads.
+4. Build Linux compute infrastructure.
+5. Integrate cloud-native management services.
+6. Implement federated identity.
+7. Build CI/CD pipelines.
+8. Implement IaC security scanning.
+9. Remediate security findings.
+10. Refactor live infrastructure without recreating it.
+11. Implement provider-native monitoring.
+12. Troubleshoot telemetry pipelines.
+13. Independently validate infrastructure.
+14. Detect configuration drift.
+15. Manage Terraform remote state.
+16. Safely destroy infrastructure when it is no longer required.
+
+---
+
+# Project Evolution
+
+The engineering maturity of the platform developed incrementally:
+
+```text
+AWS Networking
+      ↓
+Terraform Infrastructure as Code
+      ↓
+CI/CD
+      ↓
+IaC Security
+      ↓
+OIDC Federation
+      ↓
+AWS Compute
+      ↓
+Systems Management
+      ↓
+Azure Infrastructure
+      ↓
+Multi-Cloud CI/CD
+      ↓
+Reusable Terraform Modules
+      ↓
+Security Hardening
+      ↓
+AWS Observability
+      ↓
+Azure State-Aware Refactoring
+      ↓
+Azure Observability
+      ↓
+Lifecycle Validation
+      ↓
+Controlled Infrastructure Teardown
+```
+
+---
+
+# Portfolio Significance
+
+This project provides hands-on evidence of experience across several responsibilities commonly associated with Cloud Infrastructure, Cloud Engineering, Platform Engineering, DevOps, and Infrastructure Engineering roles.
+
+Rather than presenting isolated Terraform examples, the repository demonstrates an infrastructure lifecycle involving:
+
+```text
+Architecture
++
+Networking
++
+Compute
++
+Identity
++
+Security
++
+Infrastructure as Code
++
+CI/CD
++
+Observability
++
+Troubleshooting
++
+State Management
++
+Lifecycle Management
+```
+
+The project also records troubleshooting and remediation work rather than presenting only the final successful configuration.
+
+---
+
+# Final Project Result
+
+Project 3 successfully delivered a Terraform-managed multi-cloud DevSecOps infrastructure platform spanning AWS and Microsoft Azure.
+
+The final implementation demonstrated:
+
+- Multi-cloud architecture
+- AWS and Azure networking
+- Linux compute
+- Infrastructure as Code
+- Reusable Terraform modules
+- Remote state
+- GitHub Actions
+- AWS and Azure OIDC federation
+- Least-privilege access
+- Automated security scanning
+- Security remediation
+- State-aware infrastructure refactoring
+- AWS CloudWatch observability
+- Azure Monitor observability
+- Log Analytics
+- KQL
+- Infrastructure drift validation
+- Controlled Terraform destruction
+- Cloud cost management
+- Technical documentation
+
+```text
+PROJECT 3
+MULTI-CLOUD DEVSECOPS INFRASTRUCTURE AUTOMATION PLATFORM
+
+STATUS: COMPLETE
+```
+
+---
+
+# Next Portfolio Project
+
+The next stage of the Cloud & Infrastructure Engineering portfolio moves from VM-centric multi-cloud infrastructure into container orchestration and cloud-native platform engineering.
+
+## Project 4 — Kubernetes & Cloud-Native Platform Engineering
+
+Planned areas include:
+
+- Containers
+- Docker
+- Kubernetes
+- Kubernetes networking
+- Deployments
+- Services
+- ConfigMaps
+- Secrets
+- Ingress
+- Persistent storage
+- Helm
+- Kubernetes security
+- Observability
+- Infrastructure automation
+- CI/CD
+- Cloud-native deployment patterns
+
+Project 4 will build on the Terraform, cloud networking, security, CI/CD, Linux, identity, and observability foundations demonstrated in this project.
+
+---
+
+## Completion
+
+**Multi-Cloud DevSecOps Infrastructure Automation Platform — COMPLETE**
